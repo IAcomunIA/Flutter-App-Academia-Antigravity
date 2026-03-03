@@ -1,0 +1,66 @@
+name: antigravity_quiz
+description: Antigravity Academy - Quiz App educativa sobre agentes IA
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Base de datos
+  sqflite: ^2.3.0
+  path: ^1.8.3
+
+  # State management
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
+
+  # Navegación
+  go_router: ^12.0.0
+
+  # UI y animaciones
+  lottie: ^2.7.0
+  flutter_animate: ^4.3.0
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.65.0
+
+  # Fuentes e íconos
+  google_fonts: ^6.1.0
+
+  # Persistencia ligera
+  shared_preferences: ^2.2.0
+
+  # Utilidades
+  logger: ^2.0.2
+  intl: ^0.18.1
+  path_provider: ^2.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  riverpod_generator: ^2.3.0
+  build_runner: ^2.4.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/frames_astronaut/
+
+#  fonts:
+#    - family: Orbitron
+#      fonts:
+#        - asset: assets/fonts/Orbitron-Regular.ttf
+#        - asset: assets/fonts/Orbitron-Bold.ttf
+#          weight: 700
+#    - family: Inter
+#      fonts:
+#        - asset: assets/fonts/Inter-Regular.ttf
+#        - asset: assets/fonts/Inter-Medium.ttf
+#          weight: 500
