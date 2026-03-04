@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/level_progress.dart';
 import '../../data/repositories/quiz_repository.dart';
@@ -47,18 +48,23 @@ class LevelSelectorState {
 
 class LevelSelectorNotifier extends StateNotifier<LevelSelectorState> {
   final QuizRepository _repository;
+  int _subcategoryId;
 
   LevelSelectorNotifier(this._repository, int subcategoryId)
-    : super(LevelSelectorState(subcategoryId: subcategoryId)) {
+    : _subcategoryId = subcategoryId,
+      super(LevelSelectorState(subcategoryId: subcategoryId)) {
     _loadProgress();
   }
 
   Future<void> _loadProgress() async {
-    final progressMap = await _repository.getAllLevelProgress(
-      1,
-      state.subcategoryId,
-    );
-    state = state.copyWith(
+    debugPrint('LEVEL PROVIDER: Cargando progreso para subcategoryId: $_subcategoryId');
+    final progressMap = await _repository.getAllLevelProgress(1, _subcategoryId);
+    
+    debugPrint('LEVEL PROVIDER: basic stars = ${progressMap['basico']?.stars}');
+    debugPrint('LEVEL PROVIDER: intermediate stars = ${progressMap['intermedio']?.stars}');
+    
+    state = LevelSelectorState(
+      subcategoryId: _subcategoryId,
       basicProgress: progressMap['basico'],
       intermediateProgress: progressMap['intermedio'],
       advancedProgress: progressMap['avanzado'],
@@ -67,7 +73,6 @@ class LevelSelectorNotifier extends StateNotifier<LevelSelectorState> {
   }
 
   void selectLevel(String level) {
-    // Solo permitir selección si el nivel está desbloqueado
     if (level == 'basico' ||
         (level == 'intermedio' && state.isIntermediateUnlocked) ||
         (level == 'avanzado' && state.isAdvancedUnlocked)) {
@@ -76,7 +81,6 @@ class LevelSelectorNotifier extends StateNotifier<LevelSelectorState> {
   }
 
   Future<void> refresh() async {
-    state = state.copyWith(isLoading: true);
     await _loadProgress();
   }
 }

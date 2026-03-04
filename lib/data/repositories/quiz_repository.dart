@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../database/database_helper.dart';
 import '../models/question.dart';
 import '../models/quiz_result.dart';
@@ -116,31 +117,37 @@ class QuizRepository {
       );
 
       if (existing != null) {
-        // Actualizar solo si mejora
-        final updatedProgress = existing.copyWith(
-          stars: progress.stars > existing.stars
-              ? progress.stars
-              : existing.stars,
-          bestScore: progress.bestScore > existing.bestScore
-              ? progress.bestScore
-              : existing.bestScore,
-          bestPercentage: progress.bestPercentage > existing.bestPercentage
-              ? progress.bestPercentage
-              : existing.bestPercentage,
-          attempts: existing.attempts + 1,
-          completedAt: progress.completedAt,
-        );
+        // Actualizar siempre - guardar el mejor resultado
+        final newStars = progress.stars > existing.stars ? progress.stars : existing.stars;
+        final newScore = progress.bestScore > existing.bestScore ? progress.bestScore : existing.bestScore;
+        final newPercentage = progress.bestPercentage > existing.bestPercentage ? progress.bestPercentage : existing.bestPercentage;
+        
         await db.update(
           'level_progress',
-          updatedProgress.toMap()..remove('id'),
+          {
+            'stars': newStars,
+            'best_score': newScore,
+            'best_percentage': newPercentage,
+            'attempts': existing.attempts + 1,
+            'completed_at': progress.completedAt,
+          },
           where: 'id = ?',
           whereArgs: [existing.id],
         );
       } else {
-        await db.insert('level_progress', progress.toMap()..remove('id'));
+        await db.insert('level_progress', {
+          'user_id': progress.userId,
+          'subcategory_id': progress.subcategoryId,
+          'level': progress.level,
+          'stars': progress.stars,
+          'best_score': progress.bestScore,
+          'best_percentage': progress.bestPercentage,
+          'attempts': 1,
+          'completed_at': progress.completedAt,
+        });
       }
     } catch (e) {
-      // Log error
+      debugPrint('Error guardando progreso: $e');
     }
   }
 

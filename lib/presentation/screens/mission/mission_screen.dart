@@ -574,7 +574,9 @@ class _MissionScreenState extends State<MissionScreen>
                     ).format(DateTime.now()),
                   );
 
+                  debugPrint('GUARDANDO: level=$levelKey, stars=$stars, subcategoryId=${widget.subcategoryId ?? widget.categoryId}');
                   await repository.saveLevelProgress(progress);
+                  debugPrint('GUARDADO OK');
 
                   if (mounted) {
                     final progressNotifier = ref.read(progressProvider.notifier);

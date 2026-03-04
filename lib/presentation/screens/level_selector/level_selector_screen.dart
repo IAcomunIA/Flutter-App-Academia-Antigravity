@@ -207,7 +207,7 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
               }
 
               // Mission Screen
-              final result = await Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => MissionScreen(
@@ -220,9 +220,10 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                 ),
               );
               
-              // Force rebuild
+              // Force rebuild - recrear provider completamente
               if (mounted) {
                 ref.invalidate(levelSelectorProvider(widget.subcategoryId));
+                setState(() {});
               }
             }
           : null,
