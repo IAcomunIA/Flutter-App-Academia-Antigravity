@@ -25,16 +25,18 @@ class LevelProgress {
   bool get isCompleted => stars > 0;
 
   /// Verifica si el siguiente nivel está desbloqueado
-  /// Intermedio: requiere ≥1 estrella en básico
-  /// Avanzado: requiere ≥2 estrellas en intermedio
+  /// Intermedio: requiere ≥1 estrella en básico (o que básico exista/complete)
+  /// Avanzado: requiere ≥1 estrella en intermedio
   static bool isLevelUnlocked(String level, LevelProgress? previousLevel) {
+    if (previousLevel == null) return false;
+    
     switch (level) {
       case 'basico':
-        return true; // Siempre desbloqueado
+        return true;
       case 'intermedio':
-        return previousLevel != null && previousLevel.stars >= 1;
+        return previousLevel.isCompleted && previousLevel.stars >= 1;
       case 'avanzado':
-        return previousLevel != null && previousLevel.stars >= 2;
+        return previousLevel.isCompleted && previousLevel.stars >= 1;
       default:
         return false;
     }

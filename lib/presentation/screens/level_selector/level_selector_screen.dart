@@ -7,7 +7,7 @@ import 'package:antigravity_quiz/data/models/level_progress.dart';
 import 'package:antigravity_quiz/presentation/providers/level_selector_provider.dart';
 import 'package:antigravity_quiz/presentation/screens/mission/mission_screen.dart';
 
-class LevelSelectorScreen extends ConsumerWidget {
+class LevelSelectorScreen extends ConsumerStatefulWidget {
   final int categoryId;
   final int subcategoryId;
   final String subcategoryName;
@@ -22,8 +22,13 @@ class LevelSelectorScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(levelSelectorProvider(subcategoryId));
+  ConsumerState<LevelSelectorScreen> createState() => _LevelSelectorScreenState();
+}
+
+class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(levelSelectorProvider(widget.subcategoryId));
 
     return Scaffold(
       backgroundColor: AppColors.darkBg,
@@ -34,7 +39,7 @@ class LevelSelectorScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              subcategoryName,
+              widget.subcategoryName,
               style: AppTextStyles.heading2.copyWith(fontSize: 16),
             ),
             Text(
@@ -55,7 +60,6 @@ class LevelSelectorScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Ilustración superior
                   Container(
                     height: 120,
                     width: double.infinity,
@@ -63,23 +67,23 @@ class LevelSelectorScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          categoryColor.withOpacity(0.15),
+                          widget.categoryColor.withOpacity(0.15),
                           AppColors.cardBg,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: categoryColor.withOpacity(0.3)),
+                      border: Border.all(color: widget.categoryColor.withOpacity(0.3)),
                     ),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.school, size: 40, color: categoryColor),
+                          Icon(Icons.school, size: 40, color: widget.categoryColor),
                           const SizedBox(height: 8),
                           Text(
-                            subcategoryName,
+                            widget.subcategoryName,
                             style: TextStyle(
-                              color: categoryColor,
+                              color: widget.categoryColor,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -155,38 +159,34 @@ class LevelSelectorScreen extends ConsumerWidget {
 
     return InkWell(
       onTap: isUnlocked
-          ? () {
-              // Lógica de despacho dinámico Antigravity
+          ? () async {
               if (level == 'avanzado') {
-                if (categoryId == 2) {
-                  // Agentes -> Simulator
+                if (widget.categoryId == 2) {
                   context.push(
                     '/simulator',
                     extra: {
-                      'categoryId': categoryId,
-                      'categoryName': subcategoryName,
+                      'categoryId': widget.categoryId,
+                      'categoryName': widget.subcategoryName,
                       'categoryColor': color,
                     },
                   );
                   return;
-                } else if (categoryId == 3) {
-                  // Arquitectura -> Code Challenge
+                } else if (widget.categoryId == 3) {
                   context.push(
                     '/code-challenge',
                     extra: {
-                      'categoryId': categoryId,
-                      'categoryName': subcategoryName,
+                      'categoryId': widget.categoryId,
+                      'categoryName': widget.subcategoryName,
                       'categoryColor': color,
                     },
                   );
                   return;
-                } else if (categoryId == 1 || categoryId == 4) {
-                  // IA o Orquestación -> Battle Mode
+                } else if (widget.categoryId == 1 || widget.categoryId == 4) {
                   context.push(
                     '/battle-mode',
                     extra: {
-                      'categoryId': categoryId,
-                      'categoryName': subcategoryName,
+                      'categoryId': widget.categoryId,
+                      'categoryName': widget.subcategoryName,
                       'categoryColor': color,
                     },
                   );
@@ -195,36 +195,35 @@ class LevelSelectorScreen extends ConsumerWidget {
               }
 
               if (level == 'intermedio' && stars == 0) {
-                // Primera vez intermedio -> Memory Game como intro
                 context.push(
                   '/memory-game',
                   extra: {
-                    'categoryId': categoryId,
-                    'categoryName': subcategoryName,
+                    'categoryId': widget.categoryId,
+                    'categoryName': widget.subcategoryName,
                     'categoryColor': color,
                   },
                 );
                 return;
               }
 
-              // Default: Mission Screen (Quiz interactivo)
-              Navigator.push(
+              // Mission Screen
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => MissionScreen(
-                    categoryId: categoryId,
-                    subcategoryId: subcategoryId,
-                    categoryName: '$subcategoryName — $title',
+                    categoryId: widget.categoryId,
+                    subcategoryId: widget.subcategoryId,
+                    categoryName: '${widget.subcategoryName} — $title',
                     categoryColor: color,
                     selectedLevel: level,
                   ),
                 ),
-              ).then((_) {
-                // Refrescar progreso al volver de la misión
-                ref
-                    .read(levelSelectorProvider(subcategoryId).notifier)
-                    .refresh();
-              });
+              );
+              
+              // Force rebuild
+              if (mounted) {
+                ref.invalidate(levelSelectorProvider(widget.subcategoryId));
+              }
             }
           : null,
       borderRadius: BorderRadius.circular(20),
@@ -251,7 +250,6 @@ class LevelSelectorScreen extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Icono/candado
             Container(
               width: 56,
               height: 56,
@@ -268,7 +266,6 @@ class LevelSelectorScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // Contenido
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +283,6 @@ class LevelSelectorScreen extends ConsumerWidget {
                         ),
                       ),
                       const Spacer(),
-                      // XP multiplier chip
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -325,7 +321,6 @@ class LevelSelectorScreen extends ConsumerWidget {
                   ),
                   if (isUnlocked) ...[
                     const SizedBox(height: 10),
-                    // Estrellas + estado
                     Row(
                       children: [
                         ...List.generate(
