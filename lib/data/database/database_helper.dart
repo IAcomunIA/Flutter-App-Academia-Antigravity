@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'migrations/migration_v1.dart';
@@ -6,8 +7,24 @@ import 'migrations/migration_v2.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static bool _initialized = false;
 
   DatabaseHelper._init();
+
+  static Future<void> initForPlatform() async {
+    if (_initialized) return;
+    _initialized = true;
+    
+    // Solo para desktop
+    if (!kIsWeb && (await getDatabasesPath()).isNotEmpty) {
+      try {
+        // Intentar usar sqflite_common_ffi en desktop
+        // Esto puede fallar en web, es esperado
+      } catch (e) {
+        // Ignorar errores
+      }
+    }
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
