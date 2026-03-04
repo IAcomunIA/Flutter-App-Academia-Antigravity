@@ -79,14 +79,19 @@ class QuizRepository {
   ) async {
     try {
       final db = await _dbHelper.database;
+      debugPrint('QUERY: userId=$userId, subcategoryId=$subcategoryId, level=$level');
+      
       final List<Map<String, dynamic>> maps = await db.query(
         'level_progress',
         where: 'user_id = ? AND subcategory_id = ? AND level = ?',
         whereArgs: [userId, subcategoryId, level],
       );
+      debugPrint('QUERY RESULT: ${maps.length} rows');
       if (maps.isEmpty) return null;
+      debugPrint('QUERY DATA: ${maps.first}');
       return LevelProgress.fromMap(maps.first);
     } catch (e) {
+      debugPrint('QUERY ERROR: $e');
       return null;
     }
   }

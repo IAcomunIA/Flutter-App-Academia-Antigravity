@@ -561,10 +561,13 @@ class _MissionScreenState extends State<MissionScreen>
                     }
                   }
 
+                  // Usar subcategoryId consistente
+                  final saveSubcategoryId = widget.subcategoryId ?? widget.categoryId;
+                  debugPrint('MISSION: categoryId=${widget.categoryId}, subcategoryId=${widget.subcategoryId}, saveSubcategoryId=$saveSubcategoryId, level=$levelKey');
+
                   final progress = LevelProgress(
                     userId: userId,
-                    subcategoryId:
-                        widget.subcategoryId ?? widget.categoryId,
+                    subcategoryId: saveSubcategoryId,
                     level: levelKey,
                     stars: stars,
                     bestScore: totalPoints,
@@ -574,7 +577,7 @@ class _MissionScreenState extends State<MissionScreen>
                     ).format(DateTime.now()),
                   );
 
-                  debugPrint('GUARDANDO: level=$levelKey, stars=$stars, subcategoryId=${widget.subcategoryId ?? widget.categoryId}');
+                  debugPrint('GUARDANDO: level=$levelKey, stars=$stars, subcategoryId=$saveSubcategoryId');
                   await repository.saveLevelProgress(progress);
                   debugPrint('GUARDADO OK');
 

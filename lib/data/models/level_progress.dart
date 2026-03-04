@@ -25,10 +25,21 @@ class LevelProgress {
   bool get isCompleted => stars > 0;
 
   /// Verifica si el siguiente nivel está desbloqueado
-  /// Todos los niveles siempre están desbloqueados
+  /// Intermedio: requiere ≥1 estrella en básico
+  /// Avanzado: requiere ≥1 estrella en intermedio
   static bool isLevelUnlocked(String level, LevelProgress? previousLevel) {
-    // Todos los niveles siempre disponibles
-    return true;
+    if (previousLevel == null) return false;
+    
+    switch (level) {
+      case 'basico':
+        return true;
+      case 'intermedio':
+        return previousLevel.stars >= 1;
+      case 'avanzado':
+        return previousLevel.stars >= 1;
+      default:
+        return false;
+    }
   }
 
   factory LevelProgress.fromMap(Map<String, dynamic> map) => LevelProgress(
