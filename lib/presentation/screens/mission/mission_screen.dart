@@ -734,21 +734,27 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   Widget _buildMultiSelectWithShuffle(Exercise exercise) {
-    final options = List<String>.from(exercise.options!);
-    final correctIndices = List<int>.from(exercise.correctIndices!);
-    
-    options.shuffle();
-    
-    final oldToNew = <int, int>{};
-    final originalIndices = List.generate(exercise.options!.length, (i) => i);
-    originalIndices.shuffle();
-    for (int i = 0; i < originalIndices.length; i++) {
-      oldToNew[originalIndices[i]] = i;
+    // Crear pares (índice original, opción)
+    final indexedOptions = <MapEntry<int, String>>[];
+    for (int i = 0; i < exercise.options!.length; i++) {
+      indexedOptions.add(MapEntry(i, exercise.options![i]));
     }
-    final newCorrectIndices = correctIndices.map((i) => oldToNew[i] ?? i).toList();
+    
+    // Barajear los pares
+    indexedOptions.shuffle();
+    
+    // Extraer opciones barajadas y crear mapeo
+    final shuffledOptions = indexedOptions.map((e) => e.value).toList();
+    final oldToNew = <int, int>{};
+    for (int i = 0; i < indexedOptions.length; i++) {
+      oldToNew[indexedOptions[i].key] = i;
+    }
+    
+    // Mapear los índices correctos
+    final newCorrectIndices = exercise.correctIndices!.map((i) => oldToNew[i] ?? i).toList();
     
     return MultiSelectExercise(
-      options: options,
+      options: shuffledOptions,
       correctIndices: newCorrectIndices,
       onCompleted: _handleAnswer,
     );
