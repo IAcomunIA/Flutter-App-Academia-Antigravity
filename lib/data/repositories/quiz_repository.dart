@@ -9,6 +9,10 @@ class QuizRepository {
   static SharedPreferences? _prefs;
   static bool _isWeb = kIsWeb;
 
+  QuizRepository() {
+    debugPrint('QuizRepository: _isWeb = $_isWeb');
+  }
+
   Future<SharedPreferences> get _preferences async {
     _prefs ??= await SharedPreferences.getInstance();
     return _prefs!;
@@ -50,10 +54,8 @@ class QuizRepository {
     int subcategoryId,
     String level,
   ) async {
-    if (_isWeb) {
-      return _getProgressFromPrefs(userId, subcategoryId, level);
-    }
-    return null;
+    // Siempre usar SharedPreferences
+    return _getProgressFromPrefs(userId, subcategoryId, level);
   }
 
   Future<LevelProgress?> _getProgressFromPrefs(
@@ -78,27 +80,25 @@ class QuizRepository {
     int userId,
     int subcategoryId,
   ) async {
-    if (_isWeb) {
-      return _getAllProgressFromPrefs(userId, subcategoryId);
-    }
-    return {'basico': null, 'intermedio': null, 'avanzado': null};
+    debugPrint('getAllLevelProgress: userId=$userId, subcategoryId=$subcategoryId');
+    return _getAllProgressFromPrefs(userId, subcategoryId);
   }
 
   Future<Map<String, LevelProgress?>> _getAllProgressFromPrefs(
     int userId,
     int subcategoryId,
   ) async {
+    debugPrint('_getAllProgressFromPrefs: cargando...');
     final basico = await getLevelProgress(userId, subcategoryId, 'basico');
     final intermedio = await getLevelProgress(userId, subcategoryId, 'intermedio');
     final avanzado = await getLevelProgress(userId, subcategoryId, 'avanzado');
+    debugPrint('_getAllProgressFromPrefs: basico=$basico, intermedio=$intermedio, avanzado=$avanzado');
     return {'basico': basico, 'intermedio': intermedio, 'avanzado': avanzado};
   }
 
   /// V2: Guardar/actualizar progreso de un nivel
   Future<void> saveLevelProgress(LevelProgress progress) async {
-    if (_isWeb) {
-      await _saveProgressToPrefs(progress);
-    }
+    await _saveProgressToPrefs(progress);
   }
 
   Future<void> _saveProgressToPrefs(LevelProgress progress) async {
