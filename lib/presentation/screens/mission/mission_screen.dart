@@ -10,6 +10,9 @@ import 'package:antigravity_quiz/presentation/widgets/command_input_exercise.dar
 import 'package:antigravity_quiz/presentation/widgets/exercises/fill_blank_widget.dart';
 import 'package:antigravity_quiz/presentation/widgets/exercises/flow_order_widget.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
+import 'package:antigravity_quiz/data/models/level_progress.dart';
+import 'package:antigravity_quiz/data/repositories/quiz_repository.dart';
+import 'package:intl/intl.dart';
 
 class MissionScreen extends StatefulWidget {
   final int categoryId;
@@ -530,9 +533,35 @@ class _MissionScreenState extends State<MissionScreen>
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () {
-                      // Sumar XP
-                      ref.read(progressProvider.notifier).addXP(totalPoints);
-                      Navigator.pop(context);
+                      // Guardar progreso en DB para desbloquear siguientes niveles
+                      final repository = QuizRepository();
+                      final userId = 1; // En V2 mockeado a 1
+
+                      final progress = LevelProgress(
+                        userId: userId,
+                        subcategoryId:
+                            widget.subcategoryId ?? widget.categoryId,
+                        level:
+                            widget.categoryName.toLowerCase().contains('básico')
+                            ? 'basico'
+                            : widget.categoryName.toLowerCase().contains(
+                                'intermedio',
+                              )
+                            ? 'intermedio'
+                            : 'avanzado',
+                        stars: stars,
+                        bestScore: totalPoints,
+                        bestPercentage: percentage,
+                        completedAt: DateFormat(
+                          'yyyy-MM-dd HH:mm',
+                        ).format(DateTime.now()),
+                      );
+
+                      repository.saveLevelProgress(progress).then((_) {
+                        // Sumar XP en el estado global
+                        ref.read(progressProvider.notifier).addXP(totalPoints);
+                        Navigator.pop(context);
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: widget.categoryColor,

@@ -27,6 +27,8 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   String? _selectedNodeId;
   String? _firstNodeForConnection;
 
+  bool _isValidateEnabled = false;
+
   void _addNode(NodeType type, String label, IconData icon, Color color) {
     setState(() {
       final id = 'node_${DateTime.now().millisecondsSinceEpoch}';
@@ -37,9 +39,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           label: label,
           icon: icon,
           color: color,
-          position: const Offset(50, 100),
+          position: Offset(
+            50 + (MediaQuery.of(context).size.width - 100) * 0.1,
+            100 + _nodes.length * 20.0,
+          ),
         ),
       );
+      _checkValidationReady();
+    });
+  }
+
+  void _checkValidationReady() {
+    setState(() {
+      _isValidateEnabled = _nodes.length >= 2 && _connections.isNotEmpty;
     });
   }
 
@@ -50,46 +62,84 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         _firstNodeForConnection = id;
       } else {
         if (_firstNodeForConnection != id) {
-          // Crear conexión
-          _connections.add(
-            SimulatorConnection(
-              fromNodeId: _firstNodeForConnection!,
-              toNodeId: id,
-            ),
+          // Evitar conexiones duplicadas
+          bool exists = _connections.any(
+            (c) =>
+                (c.fromNodeId == _firstNodeForConnection && c.toNodeId == id) ||
+                (c.fromNodeId == id && c.toNodeId == _firstNodeForConnection),
           );
+
+          if (!exists) {
+            _connections.add(
+              SimulatorConnection(
+                fromNodeId: _firstNodeForConnection!,
+                toNodeId: id,
+              ),
+            );
+          }
         }
         _firstNodeForConnection = null;
         _selectedNodeId = null;
       }
+      _checkValidationReady();
     });
   }
 
   void _validateFlow() {
-    // Lógica de validación simplificada para la demo
-    bool hasDirectiva = _nodes.any((n) => n.type == NodeType.input);
-    bool hasOrchestrator = _nodes.any((n) => n.type == NodeType.orchestrator);
-    bool hasAgent = _nodes.any((n) => n.type == NodeType.agent);
+    // Lógica de validación dinámica por tema
+    bool isCorrect = false;
+    String message = "";
 
-    if (hasDirectiva &&
-        hasOrchestrator &&
-        hasAgent &&
-        _connections.length >= 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ ¡Arquitectura Antigravity validada con éxito!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+    // Simplificamos la detección del tema basado en el nombre o ID
+    final name = widget.categoryName.toLowerCase();
+
+    if (name.contains('agente') || widget.categoryId == 2) {
+      bool hasDirective = _nodes.any((n) => n.type == NodeType.input);
+      bool hasOrch = _nodes.any((n) => n.type == NodeType.orchestrator);
+      bool hasAgent = _nodes.any((n) => n.type == NodeType.agent);
+      isCorrect =
+          hasDirective && hasOrch && hasAgent && _connections.length >= 2;
+      message = isCorrect
+          ? "✅ Flujo de Agentes validado con éxito."
+          : "❌ Falta conectar Directiva -> Orquestador -> Agente.";
+    } else if (name.contains('arquitectura') || widget.categoryId == 3) {
+      bool hasInput = _nodes.any((n) => n.type == NodeType.input);
+      bool hasOrch = _nodes.any((n) => n.type == NodeType.orchestrator);
+      bool hasOutput = _nodes.any((n) => n.type == NodeType.output);
+      isCorrect = hasInput && hasOrch && hasOutput && _connections.length >= 2;
+      message = isCorrect
+          ? "✅ Arquitectura de 4 capas validada con éxito."
+          : "❌ Asegúrate de conectar Input, Orquestador y Output.";
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '❌ Flujo incompleto. Asegúrate de conectar Capa 1, 2 y 3.',
-          ),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      isCorrect = _nodes.length >= 3 && _connections.length >= 2;
+      message = isCorrect
+          ? "✅ Simulación completada correctamente."
+          : "❌ Construye un flujo más robusto.";
     }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(isCorrect ? "¡Validación Exitosa!" : "Flujo Incompleto"),
+        content: Text(message),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (isCorrect) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isCorrect
+                  ? AppColors.success
+                  : AppColors.surfaceBg,
+            ),
+            child: const Text("ENTENDIDO"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -110,14 +160,28 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               setState(() {
                 _nodes.clear();
                 _connections.clear();
+                _isValidateEnabled = false;
               });
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.check_circle, color: AppColors.success),
-            onPressed: _validateFlow,
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isValidateEnabled ? _validateFlow : null,
+        backgroundColor: _isValidateEnabled
+            ? AppColors.success
+            : AppColors.surfaceBg,
+        icon: Icon(
+          Icons.check_circle,
+          color: _isValidateEnabled ? Colors.white : AppColors.textMuted,
+        ),
+        label: Text(
+          'VALIDAR FLUJO',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: _isValidateEnabled ? Colors.white : AppColors.textMuted,
+          ),
+        ),
       ),
       body: Stack(
         children: [
