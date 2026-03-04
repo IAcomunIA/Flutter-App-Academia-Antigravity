@@ -38,14 +38,29 @@ class _MissionScreenState extends State<MissionScreen>
   bool lastAnswerCorrect = false;
   bool isFinished = false;
 
+  late AnimationController _feedbackTimerController;
+  bool _showFeedback = false;
+
   @override
   void initState() {
     super.initState();
     exercises = ExerciseBank.getExercisesForCategory(widget.categoryId);
     exercises.shuffle(); // Nunca se repite el orden
+
+    _feedbackTimerController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _dismissFeedback();
+            }
+          });
   }
 
-  bool _showFeedback = false;
+  @override
+  void dispose() {
+    _feedbackTimerController.dispose();
+    super.dispose();
+  }
 
   void _handleAnswer(bool isCorrect) {
     if (_showFeedback) return; // Evitar múltiples respuestas
@@ -60,15 +75,13 @@ class _MissionScreenState extends State<MissionScreen>
       }
     });
 
-    // Auto-dismiss mejorado
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      _dismissFeedback();
-    });
+    // Iniciar auto-dismiss visual
+    _feedbackTimerController.forward(from: 0.0);
   }
 
   void _dismissFeedback() {
     if (!_showFeedback) return;
+    _feedbackTimerController.stop();
     setState(() {
       _showFeedback = false;
       if (currentIndex + 1 < exercises.length) {
@@ -411,6 +424,24 @@ class _MissionScreenState extends State<MissionScreen>
               color: AppColors.textSecondary.withOpacity(0.5),
               fontSize: 12,
             ),
+          ),
+          const SizedBox(height: 16),
+          // Barra de tiempo retrocediendo
+          AnimatedBuilder(
+            animation: _feedbackTimerController,
+            builder: (context, child) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: 1.0 - _feedbackTimerController.value,
+                  backgroundColor: AppColors.surfaceBg,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    lastAnswerCorrect ? AppColors.success : AppColors.error,
+                  ),
+                  minHeight: 4,
+                ),
+              );
+            },
           ),
         ],
       ),
