@@ -28,9 +28,9 @@ class AppColors {
   // Categorías
   static const catAI = Color(0xFF00D4FF);
   static const catAgents = Color(0xFF7B2FBE);
-  static const catPython = Color(0xFF10B981);
-  static const catArch = Color(0xFFF59E0B);
-  static const catProductivity = Color(0xFFEC4899);
+  static const catArch = Color(0xFFF97316);
+  static const catOrq = Color(0xFF0891B2);
+  static const catMCP = Color(0xFFA855F7);
 
   // Gradientes
   static const gradientCyan = LinearGradient(

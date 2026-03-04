@@ -1,9 +1,12 @@
 import '../database/database_helper.dart';
 import '../models/question.dart';
+import '../models/quiz_result.dart';
+import '../models/level_progress.dart';
 
 class QuizRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
+  /// Obtiene preguntas por subcategoría (retrocompat V1)
   Future<List<Question>> getQuestions(int subcategoryId) async {
     try {
       final db = await _dbHelper.database;
@@ -12,15 +15,149 @@ class QuizRepository {
         where: 'subcategory_id = ?',
         whereArgs: [subcategoryId],
       );
-
-      if (maps.isEmpty) {
-        return _getMockQuestions(subcategoryId);
-      }
-
+      if (maps.isEmpty) return _getMockQuestions(subcategoryId);
       return List.generate(maps.length, (i) => Question.fromMap(maps[i]));
     } catch (e) {
-      // Fallback para web o errores de DB
       return _getMockQuestions(subcategoryId);
+    }
+  }
+
+  /// V2: Obtiene preguntas filtradas por subcategoría Y nivel
+  Future<List<Question>> getQuestionsByLevel(
+    int subcategoryId,
+    String level,
+  ) async {
+    try {
+      final db = await _dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'questions',
+        where: 'subcategory_id = ? AND level = ?',
+        whereArgs: [subcategoryId, level],
+      );
+      if (maps.isEmpty) return _getMockQuestions(subcategoryId);
+      return List.generate(maps.length, (i) => Question.fromMap(maps[i]));
+    } catch (e) {
+      return _getMockQuestions(subcategoryId);
+    }
+  }
+
+  /// V2: Obtiene N preguntas aleatorias de un nivel
+  Future<List<Question>> getRandomQuestions(
+    int subcategoryId,
+    String level,
+    int count,
+  ) async {
+    try {
+      final db = await _dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT * FROM questions WHERE subcategory_id = ? AND level = ? ORDER BY RANDOM() LIMIT ?',
+        [subcategoryId, level, count],
+      );
+      if (maps.isEmpty) return _getMockQuestions(subcategoryId);
+      return List.generate(maps.length, (i) => Question.fromMap(maps[i]));
+    } catch (e) {
+      return _getMockQuestions(subcategoryId);
+    }
+  }
+
+  /// V2: Guarda resultado de quiz
+  Future<void> saveQuizResult(QuizResult result) async {
+    try {
+      final db = await _dbHelper.database;
+      await db.insert('quiz_history', result.toMap()..remove('id'));
+    } catch (e) {
+      // Log error
+    }
+  }
+
+  /// V2: Obtener progreso por nivel
+  Future<LevelProgress?> getLevelProgress(
+    int userId,
+    int subcategoryId,
+    String level,
+  ) async {
+    try {
+      final db = await _dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'level_progress',
+        where: 'user_id = ? AND subcategory_id = ? AND level = ?',
+        whereArgs: [userId, subcategoryId, level],
+      );
+      if (maps.isEmpty) return null;
+      return LevelProgress.fromMap(maps.first);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// V2: Obtener progreso de todos los niveles de una subcategoría
+  Future<Map<String, LevelProgress?>> getAllLevelProgress(
+    int userId,
+    int subcategoryId,
+  ) async {
+    final basico = await getLevelProgress(userId, subcategoryId, 'basico');
+    final intermedio = await getLevelProgress(
+      userId,
+      subcategoryId,
+      'intermedio',
+    );
+    final avanzado = await getLevelProgress(userId, subcategoryId, 'avanzado');
+    return {'basico': basico, 'intermedio': intermedio, 'avanzado': avanzado};
+  }
+
+  /// V2: Guardar/actualizar progreso de un nivel
+  Future<void> saveLevelProgress(LevelProgress progress) async {
+    try {
+      final db = await _dbHelper.database;
+      final existing = await getLevelProgress(
+        progress.userId,
+        progress.subcategoryId,
+        progress.level,
+      );
+
+      if (existing != null) {
+        // Actualizar solo si mejora
+        final updatedProgress = existing.copyWith(
+          stars: progress.stars > existing.stars
+              ? progress.stars
+              : existing.stars,
+          bestScore: progress.bestScore > existing.bestScore
+              ? progress.bestScore
+              : existing.bestScore,
+          bestPercentage: progress.bestPercentage > existing.bestPercentage
+              ? progress.bestPercentage
+              : existing.bestPercentage,
+          attempts: existing.attempts + 1,
+          completedAt: progress.completedAt,
+        );
+        await db.update(
+          'level_progress',
+          updatedProgress.toMap()..remove('id'),
+          where: 'id = ?',
+          whereArgs: [existing.id],
+        );
+      } else {
+        await db.insert('level_progress', progress.toMap()..remove('id'));
+      }
+    } catch (e) {
+      // Log error
+    }
+  }
+
+  /// V2: Obtener historial de quizzes
+  Future<List<QuizResult>> getQuizHistory(int userId, {int limit = 10}) async {
+    try {
+      final db = await _dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'quiz_history',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'completed_at DESC',
+        limit: limit,
+      );
+      return List.generate(maps.length, (i) => QuizResult.fromMap(maps[i]));
+    } catch (e) {
+      return [];
     }
   }
 

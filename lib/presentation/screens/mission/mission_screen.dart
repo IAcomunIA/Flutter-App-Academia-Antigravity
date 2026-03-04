@@ -7,17 +7,20 @@ import 'package:antigravity_quiz/data/exercise_bank.dart';
 import 'package:antigravity_quiz/presentation/widgets/drag_drop_exercise.dart';
 import 'package:antigravity_quiz/presentation/widgets/multi_select_exercise.dart';
 import 'package:antigravity_quiz/presentation/widgets/command_input_exercise.dart';
-import 'package:antigravity_quiz/presentation/widgets/ordering_exercise.dart';
+import 'package:antigravity_quiz/presentation/widgets/exercises/fill_blank_widget.dart';
+import 'package:antigravity_quiz/presentation/widgets/exercises/flow_order_widget.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
 
 class MissionScreen extends StatefulWidget {
   final int categoryId;
+  final int? subcategoryId;
   final String categoryName;
   final Color categoryColor;
 
   const MissionScreen({
     super.key,
     required this.categoryId,
+    this.subcategoryId,
     required this.categoryName,
     required this.categoryColor,
   });
@@ -32,7 +35,6 @@ class _MissionScreenState extends State<MissionScreen>
   int currentIndex = 0;
   int correctCount = 0;
   int totalPoints = 0;
-  bool showFeedback = false;
   bool lastAnswerCorrect = false;
   bool isFinished = false;
 
@@ -43,29 +45,37 @@ class _MissionScreenState extends State<MissionScreen>
     exercises.shuffle(); // Nunca se repite el orden
   }
 
+  bool _showFeedback = false;
+
   void _handleAnswer(bool isCorrect) {
-    // Cerramos el teclado por si estaba abierto (ejercicio de comandos)
+    if (_showFeedback) return; // Evitar múltiples respuestas
     FocusScope.of(context).unfocus();
 
     setState(() {
       lastAnswerCorrect = isCorrect;
-      showFeedback = true;
+      _showFeedback = true; // Activar el overlay local
       if (isCorrect) {
         correctCount++;
         totalPoints += exercises[currentIndex].points;
       }
     });
 
+    // Auto-dismiss mejorado
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
-      setState(() {
-        showFeedback = false;
-        if (currentIndex + 1 < exercises.length) {
-          currentIndex++;
-        } else {
-          isFinished = true;
-        }
-      });
+      _dismissFeedback();
+    });
+  }
+
+  void _dismissFeedback() {
+    if (!_showFeedback) return;
+    setState(() {
+      _showFeedback = false;
+      if (currentIndex + 1 < exercises.length) {
+        currentIndex++;
+      } else {
+        isFinished = true;
+      }
     });
   }
 
@@ -162,16 +172,25 @@ class _MissionScreenState extends State<MissionScreen>
               ],
             ),
           ),
-          // Overlay de feedback
-          if (showFeedback) _buildFeedbackOverlay(),
+
+          // OVERLAY DE FEEDBACK (Sustituye al Dialog)
+          if (_showFeedback)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _dismissFeedback,
+                child: Container(
+                  color: Colors.black.withOpacity(0.85),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Center(child: _buildFeedbackOverlay()),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildExerciseContent(Exercise exercise) {
-    if (showFeedback) return const SizedBox.shrink();
-
     switch (exercise.type) {
       case ExerciseType.multipleChoice:
         return _buildMultipleChoice(exercise);
@@ -195,10 +214,56 @@ class _MissionScreenState extends State<MissionScreen>
           onCompleted: _handleAnswer,
         );
       case ExerciseType.ordering:
-        return OrderingExercise(
+        return FlowOrderWidget(
           items: exercise.items!,
           correctOrder: exercise.correctOrder!,
-          onCompleted: _handleAnswer,
+          onComplete: _handleAnswer,
+        );
+      case ExerciseType.fillBlank:
+        return FillBlankWidget(
+          text: exercise.questionText,
+          correctBlanks: exercise.items ?? [],
+          options: exercise.options ?? [],
+          onComplete: _handleAnswer,
+        );
+      case ExerciseType.memory:
+      case ExerciseType.battle:
+      case ExerciseType.simulator:
+      case ExerciseType.codeChallenge:
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.rocket_launch,
+                size: 64,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Misión de Modo Especial',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sal de la misión y usa el menú principal\npara ejecutar este desafío avanzado.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.surfaceBg,
+                ),
+                child: const Text('Volver a la base'),
+              ),
+            ],
+          ),
         );
     }
   }
@@ -269,101 +334,85 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   Widget _buildFeedbackOverlay() {
-    return Positioned.fill(
-      child: Material(
-        color: Colors.black.withOpacity(
-          0.8,
-        ), // Un poco más oscuro para mejor contraste
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                vertical: 40,
-              ), // Espacio para no pegar a bordes
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 400),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: lastAnswerCorrect ? AppColors.success : AppColors.error,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (lastAnswerCorrect ? AppColors.success : AppColors.error)
+                .withOpacity(0.3),
+            blurRadius: 30,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            lastAnswerCorrect ? Icons.check_circle : Icons.cancel,
+            size: 80,
+            color: lastAnswerCorrect ? AppColors.success : AppColors.error,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            lastAnswerCorrect ? '¡CORRECTO!' : 'INCORRECTO',
+            style: TextStyle(
+              color: lastAnswerCorrect ? AppColors.success : AppColors.error,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            exercises[currentIndex].explanation,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (lastAnswerCorrect)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
               child: Container(
-                margin: const EdgeInsets.all(32),
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBg,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: lastAnswerCorrect
-                        ? AppColors.success
-                        : AppColors.error,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          (lastAnswerCorrect
-                                  ? AppColors.success
-                                  : AppColors.error)
-                              .withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      lastAnswerCorrect ? Icons.check_circle : Icons.cancel,
-                      size: 72, // Un poco más grande para impacto visual
-                      color: lastAnswerCorrect
-                          ? AppColors.success
-                          : AppColors.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      lastAnswerCorrect ? '¡CORRECTO!' : 'INCORRECTO',
-                      style: TextStyle(
-                        color: lastAnswerCorrect
-                            ? AppColors.success
-                            : AppColors.error,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      exercises[currentIndex].explanation,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (lastAnswerCorrect)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.xpGold.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '+${exercises[currentIndex].points} pts',
-                            style: const TextStyle(
-                              color: AppColors.xpGold,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                decoration: BoxDecoration(
+                  color: AppColors.xpGold.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '+${exercises[currentIndex].points} pts',
+                  style: const TextStyle(
+                    color: AppColors.xpGold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
+          const SizedBox(height: 24),
+          // Botón opcional para skip manual
+          Text(
+            'Toca para continuar',
+            style: TextStyle(
+              color: AppColors.textSecondary.withOpacity(0.5),
+              fontSize: 12,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -513,6 +562,16 @@ class _MissionScreenState extends State<MissionScreen>
         return Icons.terminal;
       case ExerciseType.ordering:
         return Icons.sort;
+      case ExerciseType.fillBlank:
+        return Icons.edit_note;
+      case ExerciseType.memory:
+        return Icons.grid_view;
+      case ExerciseType.battle:
+        return Icons.whatshot;
+      case ExerciseType.simulator:
+        return Icons.account_tree;
+      case ExerciseType.codeChallenge:
+        return Icons.code;
     }
   }
 
@@ -528,6 +587,16 @@ class _MissionScreenState extends State<MissionScreen>
         return 'COMANDO';
       case ExerciseType.ordering:
         return 'ORDENAR';
+      case ExerciseType.fillBlank:
+        return 'COMPLETAR';
+      case ExerciseType.memory:
+        return 'MEMORIA';
+      case ExerciseType.battle:
+        return 'BATTLE';
+      case ExerciseType.simulator:
+        return 'SIMULADOR';
+      case ExerciseType.codeChallenge:
+        return 'CÓDIGO';
     }
   }
 }

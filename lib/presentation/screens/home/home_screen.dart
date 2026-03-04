@@ -5,7 +5,7 @@ import 'package:antigravity_quiz/core/constants/app_typography.dart';
 import 'package:antigravity_quiz/presentation/widgets/space_card.dart';
 import 'package:antigravity_quiz/presentation/widgets/xp_bar.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
-import 'package:antigravity_quiz/presentation/screens/mission/mission_screen.dart';
+import 'package:antigravity_quiz/presentation/screens/level_selector/level_selector_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,38 +21,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final List<Map<String, dynamic>> categories = [
     {
       'id': 1,
-      'name': 'IA Fundamentos',
-      'subtitle': 'Cultura general: ML, Deep Learning, LLMs',
+      'name': 'Inteligencia Artificial Fundamentos',
+      'subtitle': 'Base conceptual de IA para agentes Antigravity',
       'icon': Icons.smart_toy,
       'color': AppColors.catAI,
     },
     {
       'id': 2,
-      'name': 'Arquitectura de 4 Capas',
-      'subtitle': 'Directiva · Orquestador · Agentes · Observabilidad',
-      'icon': Icons.layers,
+      'name': 'Agentes IA — Metodología Antigravity',
+      'description': 'Roles, Skills, Workflows y autonomía',
+      'subtitle': 'Qué es un agente, skills y autonomía',
+      'icon': Icons.psychology,
       'color': AppColors.catAgents,
     },
     {
       'id': 3,
-      'name': 'MCP y Reglas Globales',
-      'subtitle': 'Model Context Protocol, logs y estándares',
-      'icon': Icons.rule,
-      'color': AppColors.catPython,
-    },
-    {
-      'id': 4,
-      'name': 'Agentes y Skills',
-      'subtitle': 'Tipos de agentes, skills, workflows',
-      'icon': Icons.engineering,
+      'name': 'Arquitectura de 4 Capas',
+      'subtitle': 'Directiva · Orquestador · Agentes · Output',
+      'icon': Icons.layers,
       'color': AppColors.catArch,
     },
     {
-      'id': 5,
-      'name': 'Orquestación Avanzada',
-      'subtitle': 'Secuencial, paralela, pipeline, fan-out/in',
+      'id': 4,
+      'name': 'Orquestación y Agentes Paralelos',
+      'subtitle': 'Flujos, sincronización y coordinación',
       'icon': Icons.account_tree,
-      'color': AppColors.catProductivity,
+      'color': AppColors.catOrq,
+    },
+    {
+      'id': 5,
+      'name': 'MCP, Skills y Reglas Globales',
+      'subtitle': 'Model Context Protocol, recursos y standards',
+      'icon': Icons.rule,
+      'color': AppColors.catMCP,
     },
   ];
 
@@ -336,7 +337,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   _buildSectionHeader('Misiones de la Academia'),
                   const SizedBox(height: 4),
                   const Text(
-                    'Todos los módulos disponibles · 5 tipos de ejercicio',
+                    'Todos los módulos · 3 niveles · 7 modos de juego',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                 ],
@@ -358,9 +359,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => MissionScreen(
+                            builder: (_) => LevelSelectorScreen(
                               categoryId: cat['id'],
-                              categoryName: cat['name'],
+                              subcategoryId: cat['id'],
+                              subcategoryName: cat['name'],
                               categoryColor: cat['color'],
                             ),
                           ),
@@ -420,7 +422,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       const SizedBox(width: 5),
                                       _tag(Icons.terminal, 'Cmd', cat['color']),
                                       const SizedBox(width: 5),
-                                      _tag(Icons.sort, 'Ord', cat['color']),
+                                      _tag(
+                                        Icons.whatshot,
+                                        'Battle',
+                                        cat['color'],
+                                      ),
+                                      const SizedBox(width: 5),
+                                      _tag(
+                                        Icons.grid_view,
+                                        'Mem',
+                                        cat['color'],
+                                      ),
                                     ],
                                   ),
                                 ],
