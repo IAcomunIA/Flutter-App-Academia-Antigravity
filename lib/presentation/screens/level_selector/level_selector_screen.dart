@@ -92,6 +92,7 @@ class LevelSelectorScreen extends ConsumerWidget {
                   // Nivel BÁSICO
                   _buildLevelCard(
                     context: context,
+                    ref: ref,
                     level: 'basico',
                     title: 'BÁSICO',
                     subtitle: 'Conceptos fundamentales · 30s por pregunta',
@@ -106,6 +107,7 @@ class LevelSelectorScreen extends ConsumerWidget {
                   // Nivel INTERMEDIO
                   _buildLevelCard(
                     context: context,
+                    ref: ref,
                     level: 'intermedio',
                     title: 'INTERMEDIO',
                     subtitle: 'Aplicación de conceptos · 20s por pregunta',
@@ -120,6 +122,7 @@ class LevelSelectorScreen extends ConsumerWidget {
                   // Nivel AVANZADO
                   _buildLevelCard(
                     context: context,
+                    ref: ref,
                     level: 'avanzado',
                     title: 'AVANZADO',
                     subtitle: 'Casos reales Antigravity · 15s por pregunta',
@@ -137,6 +140,7 @@ class LevelSelectorScreen extends ConsumerWidget {
 
   Widget _buildLevelCard({
     required BuildContext context,
+    required WidgetRef ref,
     required String level,
     required String title,
     required String subtitle,
@@ -212,9 +216,15 @@ class LevelSelectorScreen extends ConsumerWidget {
                     subcategoryId: subcategoryId,
                     categoryName: '$subcategoryName — $title',
                     categoryColor: color,
+                    selectedLevel: level,
                   ),
                 ),
-              );
+              ).then((_) {
+                // Refrescar progreso al volver de la misión
+                ref
+                    .read(levelSelectorProvider(subcategoryId).notifier)
+                    .refresh();
+              });
             }
           : null,
       borderRadius: BorderRadius.circular(20),

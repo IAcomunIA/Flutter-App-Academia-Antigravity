@@ -19,6 +19,7 @@ class MissionScreen extends StatefulWidget {
   final int? subcategoryId;
   final String categoryName;
   final Color categoryColor;
+  final String? selectedLevel;
 
   const MissionScreen({
     super.key,
@@ -26,6 +27,7 @@ class MissionScreen extends StatefulWidget {
     this.subcategoryId,
     required this.categoryName,
     required this.categoryColor,
+    this.selectedLevel,
   });
 
   @override
@@ -102,7 +104,11 @@ class _MissionScreenState extends State<MissionScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (isFinished) return _buildResultScreen();
+    if (isFinished) {
+      return Consumer(
+        builder: (context, ref, _) => _buildResultScreen(ref),
+      );
+    }
 
     final exercise = exercises[currentIndex];
 
@@ -211,18 +217,9 @@ class _MissionScreenState extends State<MissionScreen>
       case ExerciseType.multipleChoice:
         return _buildMultipleChoice(exercise);
       case ExerciseType.dragAndDrop:
-        return DragDropExercise(
-          items: exercise.items!,
-          targets: exercise.targets!,
-          correctOrder: exercise.correctOrder!,
-          onCompleted: _handleAnswer,
-        );
+        return _buildDragDropWithShuffle(exercise);
       case ExerciseType.multiSelect:
-        return MultiSelectExercise(
-          options: exercise.options!,
-          correctIndices: exercise.correctIndices!,
-          onCompleted: _handleAnswer,
-        );
+        return _buildMultiSelectWithShuffle(exercise);
       case ExerciseType.commandInput:
         return CommandInputExercise(
           acceptedAnswers: exercise.acceptedAnswers!,
@@ -230,11 +227,7 @@ class _MissionScreenState extends State<MissionScreen>
           onCompleted: _handleAnswer,
         );
       case ExerciseType.ordering:
-        return FlowOrderWidget(
-          items: exercise.items!,
-          correctOrder: exercise.correctOrder!,
-          onComplete: _handleAnswer,
-        );
+        return _buildOrderingWithShuffle(exercise);
       case ExerciseType.fillBlank:
         return FillBlankWidget(
           text: exercise.questionText,
@@ -285,12 +278,33 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   Widget _buildMultipleChoice(Exercise exercise) {
-    final options = [
-      {'key': 'A', 'text': exercise.optionA!},
-      {'key': 'B', 'text': exercise.optionB!},
-      {'key': 'C', 'text': exercise.optionC!},
-      {'key': 'D', 'text': exercise.optionD!},
+    final correctOptionKey = exercise.correctOption ?? 'A';
+    
+    final Map<String, String> optionTexts = {
+      'A': exercise.optionA ?? '',
+      'B': exercise.optionB ?? '',
+      'C': exercise.optionC ?? '',
+      'D': exercise.optionD ?? '',
+    };
+    
+    final correctAnswerText = optionTexts[correctOptionKey] ?? '';
+    
+    var options = [
+      {'key': 'A', 'text': optionTexts['A']!},
+      {'key': 'B', 'text': optionTexts['B']!},
+      {'key': 'C', 'text': optionTexts['C']!},
+      {'key': 'D', 'text': optionTexts['D']!},
     ];
+    
+    options.shuffle();
+    
+    String shuffledCorrectKey = 'A';
+    for (var opt in options) {
+      if (opt['text'] == correctAnswerText) {
+        shuffledCorrectKey = opt['key']!;
+        break;
+      }
+    }
 
     return Column(
       children: options
@@ -298,7 +312,10 @@ class _MissionScreenState extends State<MissionScreen>
             (opt) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: InkWell(
-                onTap: () => _handleMultipleChoiceAnswer(opt['key']!),
+                onTap: () {
+                  final isCorrect = opt['text'] == correctAnswerText;
+                  _handleMultipleChoiceAnswer(isCorrect ? shuffledCorrectKey : opt['key']!);
+                },
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -451,7 +468,7 @@ class _MissionScreenState extends State<MissionScreen>
     );
   }
 
-  Widget _buildResultScreen() {
+  Widget _buildResultScreen(WidgetRef ref) {
     double percentage = exercises.isNotEmpty
         ? (correctCount / exercises.length) * 100
         : 0;
@@ -464,127 +481,153 @@ class _MissionScreenState extends State<MissionScreen>
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
-          child: Consumer(
-            builder: (context, ref, _) {
-              return Column(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.military_tech,
+                size: 80,
+                color: AppColors.xpGold,
+              ),
+              const SizedBox(height: 16),
+              Text('¡MISIÓN COMPLETADA!', style: AppTextStyles.heading1),
+              const SizedBox(height: 8),
+              Text(
+                widget.categoryName,
+                style: TextStyle(
+                  color: widget.categoryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.military_tech,
-                    size: 80,
-                    color: AppColors.xpGold,
-                  ),
-                  const SizedBox(height: 16),
-                  Text('¡MISIÓN COMPLETADA!', style: AppTextStyles.heading1),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.categoryName,
-                    style: TextStyle(
-                      color: widget.categoryColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                children: List.generate(
+                  3,
+                  (i) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      i < stars ? Icons.star : Icons.star_border,
+                      size: 48,
+                      color: i < stars
+                          ? AppColors.starColor
+                          : AppColors.textMuted,
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  // Estrellas
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      3,
-                      (i) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(
-                          i < stars ? Icons.star : Icons.star_border,
-                          size: 48,
-                          color: i < stars
-                              ? AppColors.starColor
-                              : AppColors.textMuted,
-                        ),
-                      ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    _statRow(
+                      'Respuestas correctas',
+                      '$correctCount/${exercises.length}',
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Stats
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderColor),
+                    const Divider(color: AppColors.borderColor),
+                    _statRow(
+                      'Precisión',
+                      '${percentage.toStringAsFixed(0)}%',
                     ),
-                    child: Column(
-                      children: [
-                        _statRow(
-                          'Respuestas correctas',
-                          '$correctCount/${exercises.length}',
-                        ),
-                        const Divider(color: AppColors.borderColor),
-                        _statRow(
-                          'Precisión',
-                          '${percentage.toStringAsFixed(0)}%',
-                        ),
-                        const Divider(color: AppColors.borderColor),
-                        _statRow('Puntos obtenidos', '$totalPoints'),
-                        const Divider(color: AppColors.borderColor),
-                        _statRow('Estrellas', '⭐' * stars),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Guardar progreso en DB para desbloquear siguientes niveles
-                      final repository = QuizRepository();
-                      final userId = 1; // En V2 mockeado a 1
+                    const Divider(color: AppColors.borderColor),
+                    _statRow('Puntos obtenidos', '$totalPoints'),
+                    const Divider(color: AppColors.borderColor),
+                    _statRow('Estrellas', '⭐' * stars),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () async {
+                  final repository = QuizRepository();
+                  final userId = 1;
 
-                      final progress = LevelProgress(
-                        userId: userId,
-                        subcategoryId:
-                            widget.subcategoryId ?? widget.categoryId,
-                        level:
-                            widget.categoryName.toLowerCase().contains('básico')
-                            ? 'basico'
-                            : widget.categoryName.toLowerCase().contains(
-                                'intermedio',
-                              )
-                            ? 'intermedio'
-                            : 'avanzado',
-                        stars: stars,
-                        bestScore: totalPoints,
-                        bestPercentage: percentage,
-                        completedAt: DateFormat(
-                          'yyyy-MM-dd HH:mm',
-                        ).format(DateTime.now()),
+                  String levelKey = widget.selectedLevel ?? 'basico';
+                  if (levelKey.isEmpty) {
+                    final nameLower = widget.categoryName.toLowerCase();
+                    if (nameLower.contains('intermedio')) {
+                      levelKey = 'intermedio';
+                    } else if (nameLower.contains('avanzado')) {
+                      levelKey = 'avanzado';
+                    } else {
+                      levelKey = 'basico';
+                    }
+                  }
+
+                  final progress = LevelProgress(
+                    userId: userId,
+                    subcategoryId:
+                        widget.subcategoryId ?? widget.categoryId,
+                    level: levelKey,
+                    stars: stars,
+                    bestScore: totalPoints,
+                    bestPercentage: percentage,
+                    completedAt: DateFormat(
+                      'yyyy-MM-dd HH:mm',
+                    ).format(DateTime.now()),
+                  );
+
+                  await repository.saveLevelProgress(progress);
+
+                  if (mounted) {
+                    final progressNotifier = ref.read(progressProvider.notifier);
+                    progressNotifier.addXP(totalPoints);
+
+                    String nextLevel = '';
+                    if (levelKey == 'basico') {
+                      nextLevel = 'Intermedio';
+                    } else if (levelKey == 'intermedio') {
+                      nextLevel = 'Avanzado';
+                    }
+
+                    if (stars >= 1 && nextLevel.isNotEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '✨ ¡Progreso guardado! Nivel $nextLevel disponible.',
+                          ),
+                          backgroundColor: AppColors.success,
+                        ),
                       );
+                    } else if (stars >= 1) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✨ ¡Progreso guardado!'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
 
-                      repository.saveLevelProgress(progress).then((_) {
-                        // Sumar XP en el estado global
-                        ref.read(progressProvider.notifier).addXP(totalPoints);
-                        Navigator.pop(context);
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: widget.categoryColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
-                        vertical: 18,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      'VOLVER A LA BASE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.categoryColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 18,
                   ),
-                ],
-              );
-            },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'VOLVER A LA BASE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -658,5 +701,72 @@ class _MissionScreenState extends State<MissionScreen>
       case ExerciseType.codeChallenge:
         return 'CÓDIGO';
     }
+  }
+
+  Widget _buildDragDropWithShuffle(Exercise exercise) {
+    final items = List<String>.from(exercise.items!);
+    final targets = List<String>.from(exercise.targets!);
+    final correctOrder = List<int>.from(exercise.correctOrder!);
+    
+    final indices = List.generate(items.length, (i) => i);
+    indices.shuffle();
+    
+    final shuffledItems = indices.map((i) => items[i]).toList();
+    final Map<int, int> originalToShuffled = {};
+    final Map<int, int> shuffledToOriginal = {};
+    for (int i = 0; i < indices.length; i++) {
+      originalToShuffled[indices[i]] = i;
+      shuffledToOriginal[i] = indices[i];
+    }
+    final shuffledCorrectOrder = correctOrder.map((i) => originalToShuffled[i] ?? i).toList();
+    
+    return DragDropExercise(
+      items: shuffledItems,
+      targets: targets,
+      correctOrder: shuffledCorrectOrder,
+      onCompleted: _handleAnswer,
+    );
+  }
+
+  Widget _buildMultiSelectWithShuffle(Exercise exercise) {
+    final options = List<String>.from(exercise.options!);
+    final correctIndices = List<int>.from(exercise.correctIndices!);
+    
+    options.shuffle();
+    
+    final oldToNew = <int, int>{};
+    final originalIndices = List.generate(exercise.options!.length, (i) => i);
+    originalIndices.shuffle();
+    for (int i = 0; i < originalIndices.length; i++) {
+      oldToNew[originalIndices[i]] = i;
+    }
+    final newCorrectIndices = correctIndices.map((i) => oldToNew[i] ?? i).toList();
+    
+    return MultiSelectExercise(
+      options: options,
+      correctIndices: newCorrectIndices,
+      onCompleted: _handleAnswer,
+    );
+  }
+
+  Widget _buildOrderingWithShuffle(Exercise exercise) {
+    final items = List<String>.from(exercise.items!);
+    final correctOrder = List<int>.from(exercise.correctOrder!);
+    
+    items.shuffle();
+    
+    final indices = List.generate(exercise.items!.length, (i) => i);
+    indices.shuffle();
+    final oldToNew = <int, int>{};
+    for (int i = 0; i < indices.length; i++) {
+      oldToNew[indices[i]] = i;
+    }
+    final newCorrectOrder = correctOrder.map((i) => oldToNew[i] ?? i).toList();
+    
+    return FlowOrderWidget(
+      items: items,
+      correctOrder: newCorrectOrder,
+      onComplete: _handleAnswer,
+    );
   }
 }

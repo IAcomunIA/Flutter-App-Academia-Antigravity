@@ -82,7 +82,7 @@ class LevelSelectorNotifier extends StateNotifier<LevelSelectorState> {
 }
 
 /// Provider family: uno por cada subcategoría
-final levelSelectorProvider = StateNotifierProvider.autoDispose
+final levelSelectorProvider = StateNotifierProvider
     .family<LevelSelectorNotifier, LevelSelectorState, int>((
       ref,
       subcategoryId,
