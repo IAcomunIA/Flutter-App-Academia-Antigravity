@@ -44,6 +44,9 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   void _handleAnswer(bool isCorrect) {
+    // Cerramos el teclado por si estaba abierto (ejercicio de comandos)
+    FocusScope.of(context).unfocus();
+
     setState(() {
       lastAnswerCorrect = isCorrect;
       showFeedback = true;
@@ -267,66 +270,96 @@ class _MissionScreenState extends State<MissionScreen>
 
   Widget _buildFeedbackOverlay() {
     return Positioned.fill(
-      child: Container(
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              margin: const EdgeInsets.all(32),
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: AppColors.cardBg,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: lastAnswerCorrect
-                      ? AppColors.success
-                      : AppColors.error,
-                  width: 2,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    lastAnswerCorrect ? Icons.check_circle : Icons.cancel,
-                    size: 56,
+      child: Material(
+        color: Colors.black.withOpacity(
+          0.8,
+        ), // Un poco más oscuro para mejor contraste
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                vertical: 40,
+              ), // Espacio para no pegar a bordes
+              child: Container(
+                margin: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
                     color: lastAnswerCorrect
                         ? AppColors.success
                         : AppColors.error,
+                    width: 2,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    lastAnswerCorrect ? '¡CORRECTO!' : 'INCORRECTO',
-                    style: TextStyle(
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (lastAnswerCorrect
+                                  ? AppColors.success
+                                  : AppColors.error)
+                              .withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      lastAnswerCorrect ? Icons.check_circle : Icons.cancel,
+                      size: 72, // Un poco más grande para impacto visual
                       color: lastAnswerCorrect
                           ? AppColors.success
                           : AppColors.error,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    exercises[currentIndex].explanation,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (lastAnswerCorrect)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Text(
-                        '+${exercises[currentIndex].points} pts',
-                        style: const TextStyle(
-                          color: AppColors.xpGold,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      lastAnswerCorrect ? '¡CORRECTO!' : 'INCORRECTO',
+                      style: TextStyle(
+                        color: lastAnswerCorrect
+                            ? AppColors.success
+                            : AppColors.error,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      exercises[currentIndex].explanation,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (lastAnswerCorrect)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.xpGold.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '+${exercises[currentIndex].points} pts',
+                            style: const TextStyle(
+                              color: AppColors.xpGold,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
