@@ -273,17 +273,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 height: 200,
               ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.1),
 
-              // Floating small element (as seen in design)
+              // Floating small element
               Positioned(
                 bottom: 20,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
                   child: Image.asset(
-                    'assets/images/un__astrnauta_personaje_antigravedad.png', // Fallback icon
+                    'assets/images/un__astrnauta_personaje_antigravedad.png',
                     height: 24,
                   ),
                 ),
@@ -445,16 +441,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 100,
                           height: 100,
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 20,
-                              ),
-                            ],
-                          ),
                           child: Image.asset(
                             'assets/images/un__astrnauta_personaje_antigravedad.png',
                           ),
