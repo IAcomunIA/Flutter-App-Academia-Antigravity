@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:antigravity_quiz/core/constants/app_colors.dart';
@@ -7,6 +8,7 @@ import 'package:antigravity_quiz/presentation/widgets/xp_bar.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
 import 'package:antigravity_quiz/presentation/screens/level_selector/level_selector_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -141,7 +143,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             animation: _floatController,
             builder: (context, child) {
               return Positioned(
-                top: 60 + (sin(_floatController.value * 2 * pi) * 15),
+                top:
+                    60 + (sin(_floatController.value * 2 * pi) * 15).toDouble(),
                 child:
                     Image.asset(
                           'assets/images/un__astrnauta_personaje_antigravedad.png',
@@ -836,7 +839,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ],
           ),
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () async {
+              final Uri url = Uri.parse('https://ko-fi.com/s/a2f7374844');
+              if (!await launchUrl(url)) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No se pudo abrir el enlace')),
+                  );
+                }
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
