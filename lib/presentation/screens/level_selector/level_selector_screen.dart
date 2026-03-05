@@ -22,10 +22,36 @@ class LevelSelectorScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<LevelSelectorScreen> createState() => _LevelSelectorScreenState();
+  ConsumerState<LevelSelectorScreen> createState() =>
+      _LevelSelectorScreenState();
 }
 
 class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
+  /// Determina la ruta especial para nivel avanzado según categoría
+  String? _getAdvancedRoute() {
+    switch (widget.categoryId) {
+      case 2:
+        return '/simulator';
+      case 3:
+        return '/workflow-builder'; // Antes era /code-challenge
+      default:
+        return '/battle-mode'; // CAT 1, 4
+    }
+  }
+
+  /// Navegar al juego de memoria con el nivel correcto
+  void _goToMemoryGame(String level, Color color) {
+    context.push(
+      '/memory-game',
+      extra: {
+        'categoryId': widget.categoryId,
+        'categoryName': widget.subcategoryName,
+        'categoryColor': color,
+        'level': level,
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(levelSelectorProvider(widget.subcategoryId));
@@ -42,12 +68,9 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
               widget.subcategoryName,
               style: AppTextStyles.heading2.copyWith(fontSize: 16),
             ),
-            Text(
+            const Text(
               'Selecciona tu nivel',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
           ],
         ),
@@ -72,13 +95,19 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: widget.categoryColor.withOpacity(0.3)),
+                      border: Border.all(
+                        color: widget.categoryColor.withOpacity(0.3),
+                      ),
                     ),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.school, size: 40, color: widget.categoryColor),
+                          Icon(
+                            Icons.school,
+                            size: 40,
+                            color: widget.categoryColor,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             widget.subcategoryName,
@@ -93,7 +122,9 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                     ),
                   ),
 
+                  // ============================================
                   // Nivel BÁSICO
+                  // ============================================
                   _buildLevelCard(
                     context: context,
                     ref: ref,
@@ -105,10 +136,13 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                     isUnlocked: true,
                     progress: state.basicProgress,
                     xpMultiplier: '×1',
+                    gameModes: ['Quiz', 'D&D', 'Memoria 🎨'],
                   ),
                   const SizedBox(height: 16),
 
+                  // ============================================
                   // Nivel INTERMEDIO
+                  // ============================================
                   _buildLevelCard(
                     context: context,
                     ref: ref,
@@ -120,10 +154,13 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                     isUnlocked: state.isIntermediateUnlocked,
                     progress: state.intermediateProgress,
                     xpMultiplier: '×1.5',
+                    gameModes: ['Quiz', 'Memoria 🔀', 'Completar'],
                   ),
                   const SizedBox(height: 16),
 
+                  // ============================================
                   // Nivel AVANZADO
+                  // ============================================
                   _buildLevelCard(
                     context: context,
                     ref: ref,
@@ -135,6 +172,7 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                     isUnlocked: state.isAdvancedUnlocked,
                     progress: state.advancedProgress,
                     xpMultiplier: '×2',
+                    gameModes: ['Memoria 📝', 'Workflow', 'Simulador'],
                   ),
                 ],
               ),
@@ -153,6 +191,7 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
     required bool isUnlocked,
     required LevelProgress? progress,
     required String xpMultiplier,
+    List<String>? gameModes,
   }) {
     final stars = progress?.stars ?? 0;
     final hasCompleted = progress != null && progress.isCompleted;
@@ -160,6 +199,9 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
     return InkWell(
       onTap: isUnlocked
           ? () async {
+              // ─────────────────────────────────────────
+              // NIVEL AVANZADO: modos especiales
+              // ─────────────────────────────────────────
               if (level == 'avanzado') {
                 if (widget.categoryId == 2) {
                   context.push(
@@ -172,8 +214,9 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                   );
                   return;
                 } else if (widget.categoryId == 3) {
+                  // Ahora es Workflow Builder en lugar de Code Challenge
                   context.push(
-                    '/code-challenge',
+                    '/workflow-builder',
                     extra: {
                       'categoryId': widget.categoryId,
                       'categoryName': widget.subcategoryName,
@@ -194,19 +237,17 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                 }
               }
 
+              // ─────────────────────────────────────────
+              // NIVEL INTERMEDIO: Memory Game (mixto) si no completado
+              // ─────────────────────────────────────────
               if (level == 'intermedio' && stars == 0) {
-                context.push(
-                  '/memory-game',
-                  extra: {
-                    'categoryId': widget.categoryId,
-                    'categoryName': widget.subcategoryName,
-                    'categoryColor': color,
-                  },
-                );
+                _goToMemoryGame('intermedio', color);
                 return;
               }
 
-              // Mission Screen
+              // ─────────────────────────────────────────
+              // DEFAULT: Mission Screen
+              // ─────────────────────────────────────────
               await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -219,8 +260,8 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                   ),
                 ),
               );
-              
-              // Force rebuild - recrear provider completamente
+
+              // Force rebuild
               if (mounted) {
                 ref.invalidate(levelSelectorProvider(widget.subcategoryId));
                 setState(() {});
@@ -370,6 +411,36 @@ class _LevelSelectorScreenState extends ConsumerState<LevelSelectorScreen> {
                           ),
                       ],
                     ),
+                    // Modos de juego badges
+                    if (gameModes != null) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: gameModes
+                            .map(
+                              (mode) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  mode,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
                   ],
                 ],
               ),

@@ -11,7 +11,7 @@ import 'package:antigravity_quiz/presentation/screens/level_selector/level_selec
 import 'package:antigravity_quiz/presentation/screens/memory_game/memory_game_screen.dart';
 import 'package:antigravity_quiz/presentation/screens/battle_mode/battle_mode_screen.dart';
 import 'package:antigravity_quiz/presentation/screens/simulator/simulator_screen.dart';
-import 'package:antigravity_quiz/presentation/screens/code_challenge/code_challenge_screen.dart';
+import 'package:antigravity_quiz/presentation/screens/workflow_builder/workflow_builder_screen.dart';
 import 'package:antigravity_quiz/presentation/screens/exercises/exercise_dispatch_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -57,13 +57,18 @@ class _MainShellState extends State<MainShell> {
                 context.go('/categories');
                 break;
               case 2:
+                // Por ahora el dashboard sirve como ranking
+                context.go('/dashboard');
+                break;
+              case 3:
+                // Por ahora el dashboard sirve como perfil
                 context.go('/dashboard');
                 break;
             }
           },
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home_filled),
               label: 'Inicio',
             ),
@@ -73,9 +78,14 @@ class _MainShellState extends State<MainShell> {
               label: 'Módulos',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_outlined),
-              activeIcon: Icon(Icons.bar_chart),
-              label: 'Dashboard',
+              icon: Icon(Icons.leaderboard_outlined),
+              activeIcon: Icon(Icons.leaderboard),
+              label: 'Ranking',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Perfil',
             ),
           ],
         ),
@@ -139,6 +149,7 @@ final appRouter = GoRouter(
           categoryId: extras['categoryId'],
           categoryName: extras['categoryName'],
           categoryColor: extras['categoryColor'],
+          level: extras['level'] ?? 'intermedio',
         );
       },
     ),
@@ -164,11 +175,24 @@ final appRouter = GoRouter(
         );
       },
     ),
+    // Workflow Builder (reemplazo de Code Challenge)
+    GoRoute(
+      path: '/workflow-builder',
+      builder: (context, state) {
+        final extras = state.extra as Map<String, dynamic>;
+        return WorkflowBuilderScreen(
+          categoryId: extras['categoryId'],
+          categoryName: extras['categoryName'],
+          categoryColor: extras['categoryColor'],
+        );
+      },
+    ),
+    // Mantener ruta legacy por retrocompatibilidad
     GoRoute(
       path: '/code-challenge',
       builder: (context, state) {
         final extras = state.extra as Map<String, dynamic>;
-        return CodeChallengeScreen(
+        return WorkflowBuilderScreen(
           categoryId: extras['categoryId'],
           categoryName: extras['categoryName'],
           categoryColor: extras['categoryColor'],

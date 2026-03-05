@@ -3,17 +3,20 @@ import 'package:antigravity_quiz/core/constants/app_colors.dart';
 import 'package:antigravity_quiz/core/constants/app_typography.dart';
 import 'package:antigravity_quiz/presentation/widgets/memory_game_widget.dart';
 
-/// Pantalla del juego de memoria V2
+/// Pantalla del juego de memoria con 3 niveles
+/// Básico = iconos, Intermedio = mixto, Avanzado = texto
 class MemoryGameScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
   final Color categoryColor;
+  final String level; // 'basico' | 'intermedio' | 'avanzado'
 
   const MemoryGameScreen({
     super.key,
     required this.categoryId,
     required this.categoryName,
     required this.categoryColor,
+    this.level = 'intermedio',
   });
 
   @override
@@ -25,74 +28,255 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   int finalErrors = 0;
   int finalTimeSeconds = 0;
 
-  List<MapEntry<String, String>> get _memoryPairs {
-    // Pares según categoría
+  MemoryGameMode get _mode {
+    switch (widget.level) {
+      case 'basico':
+        return MemoryGameMode.icon;
+      case 'intermedio':
+        return MemoryGameMode.mixed;
+      case 'avanzado':
+        return MemoryGameMode.text;
+      default:
+        return MemoryGameMode.mixed;
+    }
+  }
+
+  String get _levelLabel {
+    switch (widget.level) {
+      case 'basico':
+        return '🟢 BÁSICO — Visual';
+      case 'intermedio':
+        return '🟡 INTERMEDIO — Mixto';
+      case 'avanzado':
+        return '🔴 AVANZADO — Texto';
+      default:
+        return 'MEMORIA';
+    }
+  }
+
+  List<MemoryPairData> get _memoryPairs {
     switch (widget.categoryId) {
-      case 1:
+      case 1: // IA Fundamentos
         return const [
-          MapEntry('Machine Learning', 'Aprende de datos'),
-          MapEntry('Deep Learning', 'Redes neuronales profundas'),
-          MapEntry('NLP', 'Procesamiento de lenguaje'),
-          MapEntry('Computer Vision', 'Análisis de imágenes'),
-          MapEntry('GPT', 'Generative Pre-trained Transformer'),
-          MapEntry('DALL-E', 'Generación de imágenes'),
-          MapEntry('Whisper', 'Transcripción de audio'),
-          MapEntry('Context Window', 'Memoria de corto plazo'),
+          MemoryPairData(
+            concept: 'Machine Learning',
+            definition: 'Aprende de datos',
+            icon: Icons.auto_graph,
+            color: AppColors.catAI,
+          ),
+          MemoryPairData(
+            concept: 'Deep Learning',
+            definition: 'Redes neuronales profundas',
+            icon: Icons.hub,
+            color: AppColors.catAI,
+          ),
+          MemoryPairData(
+            concept: 'NLP',
+            definition: 'Procesamiento de lenguaje',
+            icon: Icons.translate,
+            color: AppColors.catAI,
+          ),
+          MemoryPairData(
+            concept: 'Computer Vision',
+            definition: 'Análisis de imágenes',
+            icon: Icons.remove_red_eye,
+            color: AppColors.catAI,
+          ),
+          MemoryPairData(
+            concept: 'GPT',
+            definition: 'Generative Pre-trained',
+            icon: Icons.smart_toy,
+            color: AppColors.catAI,
+          ),
+          MemoryPairData(
+            concept: 'Context Window',
+            definition: 'Memoria de corto plazo',
+            icon: Icons.memory,
+            color: AppColors.catAI,
+          ),
         ];
-      case 2:
+      case 2: // Agentes IA
         return const [
-          MapEntry('Agente IA', 'Sistema autónomo'),
-          MapEntry('Autonomía', 'Decide sin intervención'),
-          MapEntry('Skill', 'Habilidad especializada'),
-          MapEntry('SKILL.md', 'Documento de instrucciones'),
-          MapEntry('Workflow', 'Pasos para una tarea'),
-          MapEntry('Reflection', 'Analiza su propio razonamiento'),
-          MapEntry('Roles', 'Especialidad del agente'),
-          MapEntry('Toolkit', 'Conjunto de herramientas'),
+          MemoryPairData(
+            concept: 'Agente IA',
+            definition: 'Sistema autónomo',
+            icon: Icons.smart_toy,
+            color: AppColors.catAgents,
+          ),
+          MemoryPairData(
+            concept: 'Skill',
+            definition: 'Habilidad especializada',
+            icon: Icons.extension,
+            color: AppColors.catAgents,
+          ),
+          MemoryPairData(
+            concept: 'SKILL.md',
+            definition: 'Documento de instrucciones',
+            icon: Icons.description,
+            color: AppColors.catAgents,
+          ),
+          MemoryPairData(
+            concept: 'Workflow',
+            definition: 'Pasos para una tarea',
+            icon: Icons.route,
+            color: AppColors.catAgents,
+          ),
+          MemoryPairData(
+            concept: 'Reflection',
+            definition: 'Auto-análisis del agente',
+            icon: Icons.psychology,
+            color: AppColors.catAgents,
+          ),
+          MemoryPairData(
+            concept: 'Toolkit',
+            definition: 'Conjunto de herramientas',
+            icon: Icons.handyman,
+            color: AppColors.catAgents,
+          ),
         ];
-      case 3:
+      case 3: // Arquitectura 4 Capas
         return const [
-          MapEntry('Capa 1', 'Maestro / Directiva'),
-          MapEntry('Capa 2', 'Orquestador'),
-          MapEntry('Capa 3', 'Agentes Ejecutores'),
-          MapEntry('Capa 4', 'Observabilidad / Output'),
-          MapEntry('Directiva', 'Define el QUÉ'),
-          MapEntry('Orquestador', 'Controla el CUÁNDO'),
-          MapEntry('Agentes', 'Ejecutan el CÓMO'),
-          MapEntry('Validación', 'Verifica el output'),
+          MemoryPairData(
+            concept: 'Capa 1',
+            definition: 'Maestro / Directiva',
+            icon: Icons.gavel,
+            color: AppColors.catArch,
+          ),
+          MemoryPairData(
+            concept: 'Capa 2',
+            definition: 'Orquestador',
+            icon: Icons.account_tree,
+            color: AppColors.catArch,
+          ),
+          MemoryPairData(
+            concept: 'Capa 3',
+            definition: 'Agentes Ejecutores',
+            icon: Icons.groups,
+            color: AppColors.catArch,
+          ),
+          MemoryPairData(
+            concept: 'Capa 4',
+            definition: 'Output / Validación',
+            icon: Icons.verified,
+            color: AppColors.catArch,
+          ),
+          MemoryPairData(
+            concept: 'Directiva',
+            definition: 'Define el QUÉ',
+            icon: Icons.flag,
+            color: AppColors.catArch,
+          ),
+          MemoryPairData(
+            concept: 'Validación',
+            definition: 'Verifica el output',
+            icon: Icons.check_circle,
+            color: AppColors.catArch,
+          ),
         ];
-      case 4:
+      case 4: // Orquestación
         return const [
-          MapEntry('Secuencial', 'Uno tras otro'),
-          MapEntry('Paralelo', 'Varios simultáneos'),
-          MapEntry('Pipeline', 'Cadena de outputs'),
-          MapEntry('Fan-out/in', 'Dividir y reunir'),
-          MapEntry('Race Condition', 'Conflicto por recursos'),
-          MapEntry('Sincronización', 'Coordinar tiempos'),
-          MapEntry('Handoff', 'Pasar contexto'),
-          MapEntry('Retry', 'Reintento automático'),
+          MemoryPairData(
+            concept: 'Secuencial',
+            definition: 'Uno tras otro',
+            icon: Icons.linear_scale,
+            color: AppColors.catOrq,
+          ),
+          MemoryPairData(
+            concept: 'Paralelo',
+            definition: 'Varios simultáneos',
+            icon: Icons.call_split,
+            color: AppColors.catOrq,
+          ),
+          MemoryPairData(
+            concept: 'Pipeline',
+            definition: 'Cadena de outputs',
+            icon: Icons.trending_flat,
+            color: AppColors.catOrq,
+          ),
+          MemoryPairData(
+            concept: 'Fan-out/in',
+            definition: 'Dividir y reunir',
+            icon: Icons.merge_type,
+            color: AppColors.catOrq,
+          ),
+          MemoryPairData(
+            concept: 'Handoff',
+            definition: 'Pasar contexto',
+            icon: Icons.swap_horiz,
+            color: AppColors.catOrq,
+          ),
+          MemoryPairData(
+            concept: 'Retry',
+            definition: 'Reintento automático',
+            icon: Icons.replay,
+            color: AppColors.catOrq,
+          ),
         ];
-      case 5:
+      case 5: // MCP & Skills
         return const [
-          MapEntry('MCP', 'Model Context Protocol'),
-          MapEntry('Server', 'Expone herramientas'),
-          MapEntry('Resource', 'Dato de lectura'),
-          MapEntry('Tool', 'Función ejecutable'),
-          MapEntry('Regla Global', 'Restricción general'),
-          MapEntry('Logging', 'Registro de actividad'),
-          MapEntry('Standard', 'Norma de calidad'),
-          MapEntry('MCP Client', 'El que usa las herramientas'),
+          MemoryPairData(
+            concept: 'MCP',
+            definition: 'Model Context Protocol',
+            icon: Icons.cloud_sync,
+            color: AppColors.catMCP,
+          ),
+          MemoryPairData(
+            concept: 'Server',
+            definition: 'Expone herramientas',
+            icon: Icons.dns,
+            color: AppColors.catMCP,
+          ),
+          MemoryPairData(
+            concept: 'Resource',
+            definition: 'Dato de lectura',
+            icon: Icons.folder_open,
+            color: AppColors.catMCP,
+          ),
+          MemoryPairData(
+            concept: 'Tool',
+            definition: 'Función ejecutable',
+            icon: Icons.build,
+            color: AppColors.catMCP,
+          ),
+          MemoryPairData(
+            concept: 'Regla Global',
+            definition: 'Restricción general',
+            icon: Icons.shield,
+            color: AppColors.catMCP,
+          ),
+          MemoryPairData(
+            concept: 'MCP Client',
+            definition: 'Usa las herramientas',
+            icon: Icons.devices,
+            color: AppColors.catMCP,
+          ),
         ];
       default:
         return const [
-          MapEntry('IA', 'Inteligencia Artificial'),
-          MapEntry('ML', 'Machine Learning'),
-          MapEntry('DL', 'Deep Learning'),
-          MapEntry('NLP', 'Lenguaje Natural'),
-          MapEntry('CV', 'Computer Vision'),
-          MapEntry('LLM', 'Modelo de Lenguaje'),
-          MapEntry('API', 'Interfaz de Programa'),
-          MapEntry('SDK', 'Kit de Desarrollo'),
+          MemoryPairData(
+            concept: 'IA',
+            definition: 'Inteligencia Artificial',
+            icon: Icons.auto_awesome,
+            color: AppColors.cyan,
+          ),
+          MemoryPairData(
+            concept: 'ML',
+            definition: 'Machine Learning',
+            icon: Icons.auto_graph,
+            color: AppColors.cyan,
+          ),
+          MemoryPairData(
+            concept: 'LLM',
+            definition: 'Modelo de Lenguaje',
+            icon: Icons.smart_toy,
+            color: AppColors.cyan,
+          ),
+          MemoryPairData(
+            concept: 'API',
+            definition: 'Interfaz de Programa',
+            icon: Icons.api,
+            color: AppColors.cyan,
+          ),
         ];
     }
   }
@@ -109,6 +293,18 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
     if (finalErrors == 0) return 3;
     if (finalErrors <= 3) return 2;
     return 1;
+  }
+
+  int get _xpEarned {
+    int baseXP = finalErrors == 0 ? 50 : 30;
+    switch (widget.level) {
+      case 'intermedio':
+        return (baseXP * 1.5).round();
+      case 'avanzado':
+        return baseXP * 2;
+      default:
+        return baseXP;
+    }
   }
 
   @override
@@ -137,12 +333,45 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Level badge
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: widget.categoryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: widget.categoryColor.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                _levelLabel,
+                style: TextStyle(
+                  color: widget.categoryColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
-            'Encuentra los pares concepto ↔ definición',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            _mode == MemoryGameMode.icon
+                ? 'Encuentra los pares de iconos iguales'
+                : _mode == MemoryGameMode.mixed
+                ? 'Empareja cada icono con su definición'
+                : 'Encuentra los pares concepto ↔ definición',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 20),
-          MemoryGameWidget(pairs: _memoryPairs, onComplete: _onGameComplete),
+          MemoryGameWidget(
+            pairs: _memoryPairs,
+            mode: _mode,
+            onComplete: _onGameComplete,
+          ),
         ],
       ),
     );
@@ -195,13 +424,15 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
               ),
               child: Column(
                 children: [
+                  _resultRow('Nivel', _levelLabel),
+                  const SizedBox(height: 8),
                   _resultRow('Tiempo', '${finalTimeSeconds}s'),
                   const SizedBox(height: 8),
                   _resultRow('Errores', '$finalErrors'),
                   const SizedBox(height: 8),
                   _resultRow(
                     'XP ganado',
-                    '+${finalErrors == 0 ? 50 : 30}',
+                    '+$_xpEarned',
                     valueColor: AppColors.xpGold,
                   ),
                 ],

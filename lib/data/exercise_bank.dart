@@ -97,10 +97,11 @@ class ExerciseBank {
       id: 202,
       subcategoryId: 8,
       type: ExerciseType.fillBlank,
-      questionText:
-          'Para definir capacidades nuevas, creamos un archivo llamado _____.md dentro de la carpeta de skills.',
-      items: ['SKILL', 'README', 'TOOL', 'API'],
-      correctOrder: [0], // SKILL.md
+      questionText: 'Completa la oración sobre Skills en Antigravity:',
+      blankText:
+          'Para definir capacidades nuevas, creamos un archivo llamado _____.md dentro de la carpeta de _____.',
+      correctWords: ['SKILL', 'skills'],
+      wordBank: ['SKILL', 'skills', 'README', 'TOOL', 'agents', 'API'],
       points: 15,
       difficulty: 'medio',
       explanation:
@@ -231,14 +232,22 @@ class ExerciseBank {
       id: 502,
       subcategoryId: 27,
       type: ExerciseType.fillBlank,
-      questionText:
-          'Las reglas que todo agente debe seguir se llaman Reglas _____.',
-      items: ['Globales', 'Locales', 'Simples', 'Hardcoded'],
-      correctOrder: [0], // Globales
+      questionText: 'Completa la oración sobre Reglas Antigravity:',
+      blankText:
+          'Las reglas que todo agente debe seguir se llaman Reglas _____. Estas se definen en el archivo de _____ del proyecto.',
+      correctWords: ['Globales', 'configuración'],
+      wordBank: [
+        'Globales',
+        'configuración',
+        'Locales',
+        'Simples',
+        'ejecución',
+        'Hardcoded',
+      ],
       points: 15,
       difficulty: 'facil',
       explanation:
-          'Las Reglas Globales aseguran la consistencia en todo el ecosistema.',
+          'Las Reglas Globales aseguran la consistencia en todo el ecosistema Antigravity.',
     ),
   ];
 }

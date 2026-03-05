@@ -50,7 +50,7 @@ class _MissionScreenState extends State<MissionScreen>
   void initState() {
     super.initState();
     exercises = ExerciseBank.getExercisesForCategory(widget.categoryId);
-    exercises.shuffle(); // Nunca se repite el orden
+    exercises.shuffle();
 
     _feedbackTimerController =
         AnimationController(vsync: this, duration: const Duration(seconds: 2))
@@ -68,19 +68,18 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   void _handleAnswer(bool isCorrect) {
-    if (_showFeedback) return; // Evitar múltiples respuestas
+    if (_showFeedback) return;
     FocusScope.of(context).unfocus();
 
     setState(() {
       lastAnswerCorrect = isCorrect;
-      _showFeedback = true; // Activar el overlay local
+      _showFeedback = true;
       if (isCorrect) {
         correctCount++;
         totalPoints += exercises[currentIndex].points;
       }
     });
 
-    // Iniciar auto-dismiss visual
     _feedbackTimerController.forward(from: 0.0);
   }
 
@@ -105,9 +104,7 @@ class _MissionScreenState extends State<MissionScreen>
   @override
   Widget build(BuildContext context) {
     if (isFinished) {
-      return Consumer(
-        builder: (context, ref, _) => _buildResultScreen(ref),
-      );
+      return Consumer(builder: (context, ref, _) => _buildResultScreen(ref));
     }
 
     final exercise = exercises[currentIndex];
@@ -174,7 +171,7 @@ class _MissionScreenState extends State<MissionScreen>
                     ),
                     Text(
                       '$totalPoints pts',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.xpGold,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -195,7 +192,7 @@ class _MissionScreenState extends State<MissionScreen>
             ),
           ),
 
-          // OVERLAY DE FEEDBACK (Sustituye al Dialog)
+          // OVERLAY DE FEEDBACK
           if (_showFeedback)
             Positioned.fill(
               child: GestureDetector(
@@ -230,9 +227,10 @@ class _MissionScreenState extends State<MissionScreen>
         return _buildOrderingWithShuffle(exercise);
       case ExerciseType.fillBlank:
         return FillBlankWidget(
-          text: exercise.questionText,
-          correctBlanks: exercise.items ?? [],
-          options: exercise.options ?? [],
+          text: exercise.blankText ?? exercise.questionText,
+          correctBlanks: exercise.correctWords ?? exercise.items ?? [],
+          options:
+              exercise.wordBank ?? exercise.options ?? exercise.items ?? [],
           onComplete: _handleAnswer,
         );
       case ExerciseType.memory:
@@ -279,25 +277,25 @@ class _MissionScreenState extends State<MissionScreen>
 
   Widget _buildMultipleChoice(Exercise exercise) {
     final correctOptionKey = exercise.correctOption ?? 'A';
-    
+
     final Map<String, String> optionTexts = {
       'A': exercise.optionA ?? '',
       'B': exercise.optionB ?? '',
       'C': exercise.optionC ?? '',
       'D': exercise.optionD ?? '',
     };
-    
+
     final correctAnswerText = optionTexts[correctOptionKey] ?? '';
-    
+
     var options = [
       {'key': 'A', 'text': optionTexts['A']!},
       {'key': 'B', 'text': optionTexts['B']!},
       {'key': 'C', 'text': optionTexts['C']!},
       {'key': 'D', 'text': optionTexts['D']!},
     ];
-    
+
     options.shuffle();
-    
+
     String shuffledCorrectKey = 'A';
     for (var opt in options) {
       if (opt['text'] == correctAnswerText) {
@@ -314,7 +312,9 @@ class _MissionScreenState extends State<MissionScreen>
               child: InkWell(
                 onTap: () {
                   final isCorrect = opt['text'] == correctAnswerText;
-                  _handleMultipleChoiceAnswer(isCorrect ? shuffledCorrectKey : opt['key']!);
+                  _handleMultipleChoiceAnswer(
+                    isCorrect ? shuffledCorrectKey : opt['key']!,
+                  );
                 },
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
@@ -437,7 +437,6 @@ class _MissionScreenState extends State<MissionScreen>
               ),
             ),
           const SizedBox(height: 24),
-          // Botón opcional para skip manual
           Text(
             'Toca para continuar',
             style: TextStyle(
@@ -446,7 +445,6 @@ class _MissionScreenState extends State<MissionScreen>
             ),
           ),
           const SizedBox(height: 16),
-          // Barra de tiempo retrocediendo
           AnimatedBuilder(
             animation: _feedbackTimerController,
             builder: (context, child) {
@@ -532,10 +530,7 @@ class _MissionScreenState extends State<MissionScreen>
                       '$correctCount/${exercises.length}',
                     ),
                     const Divider(color: AppColors.borderColor),
-                    _statRow(
-                      'Precisión',
-                      '${percentage.toStringAsFixed(0)}%',
-                    ),
+                    _statRow('Precisión', '${percentage.toStringAsFixed(0)}%'),
                     const Divider(color: AppColors.borderColor),
                     _statRow('Puntos obtenidos', '$totalPoints'),
                     const Divider(color: AppColors.borderColor),
@@ -561,9 +556,11 @@ class _MissionScreenState extends State<MissionScreen>
                     }
                   }
 
-                  // Usar subcategoryId consistente
-                  final saveSubcategoryId = widget.subcategoryId ?? widget.categoryId;
-                  debugPrint('MISSION: categoryId=${widget.categoryId}, subcategoryId=${widget.subcategoryId}, saveSubcategoryId=$saveSubcategoryId, level=$levelKey');
+                  final saveSubcategoryId =
+                      widget.subcategoryId ?? widget.categoryId;
+                  debugPrint(
+                    'MISSION: categoryId=${widget.categoryId}, subcategoryId=${widget.subcategoryId}, saveSubcategoryId=$saveSubcategoryId, level=$levelKey',
+                  );
 
                   final progress = LevelProgress(
                     userId: userId,
@@ -577,12 +574,16 @@ class _MissionScreenState extends State<MissionScreen>
                     ).format(DateTime.now()),
                   );
 
-                  debugPrint('GUARDANDO: level=$levelKey, stars=$stars, subcategoryId=$saveSubcategoryId');
+                  debugPrint(
+                    'GUARDANDO: level=$levelKey, stars=$stars, subcategoryId=$saveSubcategoryId',
+                  );
                   await repository.saveLevelProgress(progress);
                   debugPrint('GUARDADO OK');
 
                   if (mounted) {
-                    final progressNotifier = ref.read(progressProvider.notifier);
+                    final progressNotifier = ref.read(
+                      progressProvider.notifier,
+                    );
                     progressNotifier.addXP(totalPoints);
 
                     String nextLevel = '';
@@ -679,7 +680,7 @@ class _MissionScreenState extends State<MissionScreen>
       case ExerciseType.simulator:
         return Icons.account_tree;
       case ExerciseType.codeChallenge:
-        return Icons.code;
+        return Icons.route;
     }
   }
 
@@ -704,7 +705,7 @@ class _MissionScreenState extends State<MissionScreen>
       case ExerciseType.simulator:
         return 'SIMULADOR';
       case ExerciseType.codeChallenge:
-        return 'CÓDIGO';
+        return 'FLUJO';
     }
   }
 
@@ -712,10 +713,10 @@ class _MissionScreenState extends State<MissionScreen>
     final items = List<String>.from(exercise.items!);
     final targets = List<String>.from(exercise.targets!);
     final correctOrder = List<int>.from(exercise.correctOrder!);
-    
+
     final indices = List.generate(items.length, (i) => i);
     indices.shuffle();
-    
+
     final shuffledItems = indices.map((i) => items[i]).toList();
     final Map<int, int> originalToShuffled = {};
     final Map<int, int> shuffledToOriginal = {};
@@ -723,8 +724,10 @@ class _MissionScreenState extends State<MissionScreen>
       originalToShuffled[indices[i]] = i;
       shuffledToOriginal[i] = indices[i];
     }
-    final shuffledCorrectOrder = correctOrder.map((i) => originalToShuffled[i] ?? i).toList();
-    
+    final shuffledCorrectOrder = correctOrder
+        .map((i) => originalToShuffled[i] ?? i)
+        .toList();
+
     return DragDropExercise(
       items: shuffledItems,
       targets: targets,
@@ -734,25 +737,23 @@ class _MissionScreenState extends State<MissionScreen>
   }
 
   Widget _buildMultiSelectWithShuffle(Exercise exercise) {
-    // Crear pares (índice original, opción)
     final indexedOptions = <MapEntry<int, String>>[];
     for (int i = 0; i < exercise.options!.length; i++) {
       indexedOptions.add(MapEntry(i, exercise.options![i]));
     }
-    
-    // Barajear los pares
+
     indexedOptions.shuffle();
-    
-    // Extraer opciones barajadas y crear mapeo
+
     final shuffledOptions = indexedOptions.map((e) => e.value).toList();
     final oldToNew = <int, int>{};
     for (int i = 0; i < indexedOptions.length; i++) {
       oldToNew[indexedOptions[i].key] = i;
     }
-    
-    // Mapear los índices correctos
-    final newCorrectIndices = exercise.correctIndices!.map((i) => oldToNew[i] ?? i).toList();
-    
+
+    final newCorrectIndices = exercise.correctIndices!
+        .map((i) => oldToNew[i] ?? i)
+        .toList();
+
     return MultiSelectExercise(
       options: shuffledOptions,
       correctIndices: newCorrectIndices,
@@ -763,9 +764,9 @@ class _MissionScreenState extends State<MissionScreen>
   Widget _buildOrderingWithShuffle(Exercise exercise) {
     final items = List<String>.from(exercise.items!);
     final correctOrder = List<int>.from(exercise.correctOrder!);
-    
+
     items.shuffle();
-    
+
     final indices = List.generate(exercise.items!.length, (i) => i);
     indices.shuffle();
     final oldToNew = <int, int>{};
@@ -773,7 +774,7 @@ class _MissionScreenState extends State<MissionScreen>
       oldToNew[indices[i]] = i;
     }
     final newCorrectOrder = correctOrder.map((i) => oldToNew[i] ?? i).toList();
-    
+
     return FlowOrderWidget(
       items: items,
       correctOrder: newCorrectOrder,
