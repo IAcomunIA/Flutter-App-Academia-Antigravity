@@ -87,6 +87,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
+  void _launchProUrl() async {
+    final Uri url = Uri.parse('https://ko-fi.com/s/a2f7374844');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _showProModal() {
     showDialog(
       context: context,
@@ -747,7 +754,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: InkWell(
-        onTap: _showProModal,
+        onTap: _launchProUrl,
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -913,7 +920,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ],
       ),
       child: ElevatedButton(
-        onPressed: _showProModal,
+        onPressed: _launchProUrl,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.cyan,
           foregroundColor: Colors.black,

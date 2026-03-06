@@ -13,6 +13,8 @@ import 'package:antigravity_quiz/presentation/screens/battle_mode/battle_mode_sc
 import 'package:antigravity_quiz/presentation/screens/simulator/simulator_screen.dart';
 import 'package:antigravity_quiz/presentation/screens/workflow_builder/workflow_builder_screen.dart';
 import 'package:antigravity_quiz/presentation/screens/exercises/exercise_dispatch_screen.dart';
+import 'package:antigravity_quiz/presentation/screens/results/quiz_results_screen.dart';
+import 'package:antigravity_quiz/data/models/quiz_result.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -208,6 +210,13 @@ final appRouter = GoRouter(
           data: extras['data'],
           categoryName: extras['categoryName'],
         );
+      },
+    ),
+    GoRoute(
+      path: '/quiz-results',
+      builder: (context, state) {
+        final result = state.extra as QuizResult;
+        return QuizResultsScreen(result: result);
       },
     ),
   ],

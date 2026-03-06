@@ -4,6 +4,8 @@ import 'package:antigravity_quiz/core/constants/app_colors.dart';
 import 'package:antigravity_quiz/core/constants/app_typography.dart';
 import 'package:antigravity_quiz/presentation/providers/quiz_provider.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
+import 'package:antigravity_quiz/presentation/screens/results/quiz_results_screen.dart';
+import 'package:antigravity_quiz/data/models/quiz_result.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -19,20 +21,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     Future.microtask(() => ref.read(quizProvider.notifier).loadQuiz(1));
   }
 
-  void _finishQuiz() {
-    // Al terminar el primer módulo (ID 1), desbloqueamos el segundo (ID 2)
-    ref.read(progressProvider.notifier).unlockCategory(2);
-    ref.read(progressProvider.notifier).addXP(250);
-    Navigator.pop(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: AppColors.success,
-        content: Text('¡Nivel 2 desbloqueado! Revisa tu base.'),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final quizState = ref.watch(quizProvider);
@@ -45,46 +33,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     }
 
     if (quizState.isFinished) {
-      return Scaffold(
-        backgroundColor: AppColors.darkBg,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.stars, size: 80, color: AppColors.starColor),
-              const SizedBox(height: 24),
-              Text('¡MISIÓN COMPLETADA!', style: AppTextStyles.heading1),
-              const SizedBox(height: 12),
-              Text(
-                'Has ganado 250 XP y desbloqueado el siguiente nivel',
-                style: AppTextStyles.bodySecondary,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _finishQuiz,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cyan,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 15,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'VOLVER A LA BASE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      // Calcular resultados reales para la pantalla de trofeo
+      int correct = 0;
+      quizState.answers.forEach((index, ans) {
+        if (ans == quizState.questions[index].correctOption) {
+          correct++;
+        }
+      });
+
+      final result = QuizResult(
+        userId: 1,
+        subcategoryId: 1,
+        level: 'básico',
+        score: correct * 15,
+        correctCount: correct,
+        totalQuestions: quizState.questions.length,
+        percentage: correct / quizState.questions.length,
+        timeSeconds: 154, // 2:34 ficticio
+        completedAt: DateTime.now().toIso8601String(),
+        xpEarned: 150,
       );
+
+      return QuizResultsScreen(result: result);
     }
 
     final currentQuestion = quizState.questions[quizState.currentIndex];

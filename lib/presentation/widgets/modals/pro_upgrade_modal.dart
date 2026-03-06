@@ -51,11 +51,9 @@ class _ProUpgradeModalState extends ConsumerState<ProUpgradeModal> {
   }
 
   void _openPaymentPage() async {
-    final url = Uri.parse(
-      'https://ko-fi.com/antigravity',
-    ); // URL de ejemplo o la real
+    final url = Uri.parse('https://ko-fi.com/s/a2f7374844');
     if (await canLaunchUrl(url)) {
-      await launchUrl(url);
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     }
   }
 

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:antigravity_quiz/core/constants/app_colors.dart';
 import 'package:antigravity_quiz/core/constants/app_typography.dart';
 import 'package:antigravity_quiz/presentation/screens/level_selector/level_selector_screen.dart';
-import 'package:antigravity_quiz/presentation/screens/memory_game/memory_game_screen.dart';
-import 'package:antigravity_quiz/presentation/screens/battle_mode/battle_mode_screen.dart';
-import 'package:antigravity_quiz/presentation/screens/simulator/simulator_screen.dart';
-import 'package:antigravity_quiz/presentation/screens/code_challenge/code_challenge_screen.dart';
+import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
+import 'package:antigravity_quiz/presentation/widgets/modals/pro_upgrade_modal.dart';
 
 /// Pantalla de categorías V2 con 5 módulos y acceso a todos los modos
-class CategoriesScreen extends StatelessWidget {
+class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 
   static const _categories = [
@@ -50,8 +49,18 @@ class CategoriesScreen extends StatelessWidget {
     ),
   ];
 
+  void _showProModal(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => const ProUpgradeModal(),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProgress = ref.watch(progressProvider);
+
     return Scaffold(
       backgroundColor: AppColors.darkBg,
       appBar: AppBar(
@@ -89,11 +98,18 @@ class CategoriesScreen extends StatelessWidget {
                         style: AppTextStyles.heading2.copyWith(fontSize: 16),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        '5 módulos · 3 niveles · 7 modos de juego',
+                      Text(
+                        userProgress.isPackProUnlocked
+                            ? 'Acceso Total Activo (PRO)'
+                            : '5 módulos · 3 niveles · 7 modos de juego',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: userProgress.isPackProUnlocked
+                              ? AppColors.xpGold
+                              : AppColors.textSecondary,
                           fontSize: 12,
+                          fontWeight: userProgress.isPackProUnlocked
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -104,7 +120,10 @@ class CategoriesScreen extends StatelessWidget {
           ),
 
           // Categorías
-          ..._categories.map((cat) => _buildCategoryCard(context, cat)),
+          ..._categories.map((cat) {
+            final isLocked = !userProgress.unlockedCategoryIds.contains(cat.id);
+            return _buildCategoryCard(context, cat, isLocked);
+          }),
 
           const SizedBox(height: 24),
 
@@ -128,7 +147,14 @@ class CategoriesScreen extends StatelessWidget {
                   title: 'Battle',
                   subtitle: '8s por pregunta',
                   color: AppColors.error,
-                  onTap: () => _showCategorySelectorDialog(context, 'battle'),
+                  isLocked: !userProgress.isPackProUnlocked,
+                  onTap: () {
+                    if (!userProgress.isPackProUnlocked) {
+                      _showProModal(context);
+                    } else {
+                      _showCategorySelectorDialog(context, 'battle');
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -139,7 +165,14 @@ class CategoriesScreen extends StatelessWidget {
                   title: 'Memoria',
                   subtitle: 'Pares concepto',
                   color: AppColors.purple,
-                  onTap: () => _showCategorySelectorDialog(context, 'memory'),
+                  isLocked: !userProgress.isPackProUnlocked,
+                  onTap: () {
+                    if (!userProgress.isPackProUnlocked) {
+                      _showProModal(context);
+                    } else {
+                      _showCategorySelectorDialog(context, 'memory');
+                    }
+                  },
                 ),
               ),
             ],
@@ -154,8 +187,14 @@ class CategoriesScreen extends StatelessWidget {
                   title: 'Simulador',
                   subtitle: 'Flujos V2',
                   color: AppColors.catAgents,
-                  onTap: () =>
-                      _showCategorySelectorDialog(context, 'simulator'),
+                  isLocked: !userProgress.isPackProUnlocked,
+                  onTap: () {
+                    if (!userProgress.isPackProUnlocked) {
+                      _showProModal(context);
+                    } else {
+                      _showCategorySelectorDialog(context, 'simulator');
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -166,7 +205,14 @@ class CategoriesScreen extends StatelessWidget {
                   title: 'Reto de Código',
                   subtitle: 'Bugs Agentes',
                   color: AppColors.catArch,
-                  onTap: () => _showCategorySelectorDialog(context, 'code'),
+                  isLocked: !userProgress.isPackProUnlocked,
+                  onTap: () {
+                    if (!userProgress.isPackProUnlocked) {
+                      _showProModal(context);
+                    } else {
+                      _showCategorySelectorDialog(context, 'code');
+                    }
+                  },
                 ),
               ),
             ],
@@ -176,11 +222,19 @@ class CategoriesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, _CategoryData cat) {
+  Widget _buildCategoryCard(
+    BuildContext context,
+    _CategoryData cat,
+    bool isLocked,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: InkWell(
         onTap: () {
+          if (isLocked) {
+            _showProModal(context);
+            return;
+          }
           context.push(
             '/level-selector',
             extra: {
@@ -197,7 +251,11 @@ class CategoriesScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.cardBg,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cat.color.withOpacity(0.3)),
+            border: Border.all(
+              color: isLocked
+                  ? AppColors.borderColor.withOpacity(0.5)
+                  : cat.color.withOpacity(0.3),
+            ),
           ),
           child: Row(
             children: [
@@ -205,29 +263,51 @@ class CategoriesScreen extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: cat.color.withOpacity(0.12),
+                  color: isLocked
+                      ? AppColors.textMuted.withOpacity(0.12)
+                      : cat.color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(cat.icon, color: cat.color, size: 26),
+                child: Icon(
+                  cat.icon,
+                  color: isLocked ? AppColors.textMuted : cat.color,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      cat.name,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            cat.name,
+                            style: TextStyle(
+                              color: isLocked
+                                  ? AppColors.textMuted
+                                  : AppColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (isLocked)
+                          const Icon(
+                            Icons.lock,
+                            color: AppColors.textMuted,
+                            size: 16,
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       cat.description,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: isLocked
+                            ? AppColors.textMuted.withOpacity(0.7)
+                            : AppColors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -235,16 +315,25 @@ class CategoriesScreen extends StatelessWidget {
                     // Mini indicador de niveles
                     Row(
                       children: [
-                        _buildLevelDot('B', AppColors.success),
+                        _buildLevelDot(
+                          'B',
+                          isLocked ? AppColors.textMuted : AppColors.success,
+                        ),
                         const SizedBox(width: 6),
-                        _buildLevelDot('I', AppColors.warning),
+                        _buildLevelDot(
+                          'I',
+                          isLocked ? AppColors.textMuted : AppColors.warning,
+                        ),
                         const SizedBox(width: 6),
-                        _buildLevelDot('A', AppColors.error),
+                        _buildLevelDot(
+                          'A',
+                          isLocked ? AppColors.textMuted : AppColors.error,
+                        ),
                         const Spacer(),
                         Icon(
                           Icons.arrow_forward_ios,
                           size: 14,
-                          color: cat.color,
+                          color: isLocked ? AppColors.textMuted : cat.color,
                         ),
                       ],
                     ),
@@ -282,6 +371,7 @@ class CategoriesScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
+    required bool isLocked,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -292,28 +382,53 @@ class CategoriesScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.4)),
+          border: Border.all(
+            color: isLocked
+                ? AppColors.borderColor.withOpacity(0.3)
+                : color.withOpacity(0.4),
+          ),
         ),
-        child: Column(
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              children: [
+                Icon(
+                  icon,
+                  color: isLocked ? AppColors.textMuted : color,
+                  size: 32,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isLocked ? AppColors.textMuted : color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: isLocked
+                        ? AppColors.textMuted.withOpacity(0.7)
+                        : AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
+            if (isLocked)
+              const Positioned(
+                top: 0,
+                right: 0,
+                child: Icon(
+                  Icons.lock_outline,
+                  color: AppColors.textMuted,
+                  size: 14,
+                ),
               ),
-            ),
           ],
         ),
       ),
