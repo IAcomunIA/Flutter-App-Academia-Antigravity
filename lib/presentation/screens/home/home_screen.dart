@@ -7,6 +7,7 @@ import 'package:antigravity_quiz/presentation/widgets/space_card.dart';
 import 'package:antigravity_quiz/presentation/widgets/xp_bar.dart';
 import 'package:antigravity_quiz/presentation/providers/progress_provider.dart';
 import 'package:antigravity_quiz/presentation/screens/level_selector/level_selector_screen.dart';
+import 'package:antigravity_quiz/presentation/widgets/modals/pro_upgrade_modal.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -35,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       'id': 2,
       'name': 'Agentes IA',
       'subtitle': 'Roles y Skills',
-      'progress': 0.25,
+      'progress': 0.0,
       'icon': Icons.psychology,
       'color': AppColors.catAgents,
     },
@@ -46,6 +47,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       'progress': 0.0,
       'icon': Icons.layers,
       'color': AppColors.catArch,
+    },
+    {
+      'id': 4,
+      'name': 'Orquestación',
+      'subtitle': 'Flujos Paralelos',
+      'progress': 0.0,
+      'icon': Icons.hub,
+      'color': AppColors.catOrq,
+    },
+    {
+      'id': 5,
+      'name': 'MCP & Skills',
+      'subtitle': 'Integración',
+      'progress': 0.0,
+      'icon': Icons.extension,
+      'color': AppColors.catMCP,
     },
   ];
 
@@ -68,6 +85,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _floatController.dispose();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  void _showProModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => const ProUpgradeModal(),
+    );
   }
 
   @override
@@ -94,7 +119,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             // ─────────────────────────────────────────
             // ═══  SECCIÓN 3: MÓDULOS ACTIVOS   ═══
             // ─────────────────────────────────────────
-            _buildActiveModules(),
+            _buildActiveModules(userProgress),
 
             // ─────────────────────────────────────────
             // ═══  SECCIÓN 4: MISIÓN ACTUAL      ═══
@@ -119,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildHeroHeader(double screenWidth) {
-    return Container(
+    return SizedBox(
       height: 520,
       width: double.infinity,
       child: Stack(
@@ -296,11 +321,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.workspace_premium,
-                  color: AppColors.xpGold,
-                  size: 20,
-                ),
+                if (progress.isPackProUnlocked)
+                  const Icon(
+                        Icons.workspace_premium,
+                        color: AppColors.xpGold,
+                        size: 24,
+                      )
+                      .animate(onPlay: (controller) => controller.repeat())
+                      .shimmer(duration: 2.seconds),
                 const SizedBox(width: 8),
                 const Icon(Icons.flash_on, color: AppColors.cyan, size: 20),
               ],
@@ -372,7 +400,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildActiveModules() {
+  Widget _buildActiveModules(UserProgress progress) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -383,7 +411,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSectionTitle('MÓDULOS ACTIVOS'),
+                _buildSectionTitle('MÓDULOS DE APRENDIZAJE'),
                 TextButton(
                   onPressed: () {},
                   child: const Text(
@@ -407,7 +435,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final cat = categories[index];
-                return _buildModuleCard(cat);
+                final isLocked = !progress.unlockedCategoryIds.contains(
+                  cat['id'],
+                );
+                return _buildModuleCard(cat, isLocked);
               },
             ),
           ),
@@ -416,9 +447,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildModuleCard(Map<String, dynamic> cat) {
+  Widget _buildModuleCard(Map<String, dynamic> cat, bool isLocked) {
     return InkWell(
       onTap: () {
+        if (isLocked) {
+          _showProModal();
+          return;
+        }
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -438,50 +473,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         decoration: BoxDecoration(
           color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderColor),
+          border: Border.all(
+            color: isLocked
+                ? AppColors.borderColor.withOpacity(0.5)
+                : AppColors.borderColor,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Icon(cat['icon'], color: cat['color'], size: 20),
-            const SizedBox(height: 12),
-            Text(
-              cat['name'],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-            ),
-            const Spacer(),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: cat['progress'] as double,
-                      minHeight: 3,
-                      backgroundColor: AppColors.surfaceBg,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        cat['color'] as Color,
+                Icon(
+                  cat['icon'],
+                  color: isLocked ? AppColors.textMuted : cat['color'],
+                  size: 20,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  cat['name'],
+                  style: TextStyle(
+                    color: isLocked ? AppColors.textMuted : Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                ),
+                const Spacer(),
+                if (!isLocked)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: cat['progress'] as double,
+                            minHeight: 3,
+                            backgroundColor: AppColors.surfaceBg,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              cat['color'] as Color,
+                            ),
+                          ),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${((cat['progress'] as double) * 100).toInt()}%',
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (isLocked)
+                  const Text(
+                    'MODULO BLOQUEADO',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${((cat['progress'] as double) * 100).toInt()}%',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
-                  ),
-                ),
               ],
             ),
+            if (isLocked)
+              const Positioned(
+                top: 0,
+                right: 0,
+                child: Icon(Icons.lock, color: AppColors.textMuted, size: 16),
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
       ),
     );
   }
@@ -500,15 +575,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               color: AppColors.cardBg,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: AppColors.borderColor),
-              image: DecorationImage(
-                image: const AssetImage('assets/images/hero.png'),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.7),
-                  BlendMode.darken,
-                ),
-                opacity: 0.2,
-              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +589,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'MISIÓN 04',
+                    'MISIÓN 01 (BÁSICO)',
                     style: TextStyle(
                       color: AppColors.cyan,
                       fontSize: 10,
@@ -533,7 +599,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Arquitectura de 4 Capas',
+                  'IA Fundamentos',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -542,7 +608,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Aprende a orquestar agentes distribuidos con el protocolo Antigravity.',
+                  'Domina los pilares de la IA antes de empezar con los agentes.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -550,7 +616,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LevelSelectorScreen(
+                          categoryId: 1,
+                          subcategoryId: 1,
+                          subcategoryName: 'IA Fundamentos',
+                          categoryColor: AppColors.catAI,
+                        ),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.cyan,
                     minimumSize: const Size(double.infinity, 50),
@@ -634,30 +712,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     IconData icon,
     Color color,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: _showProModal,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          Text(
-            sub,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
-          ),
-        ],
+            Text(
+              sub,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -665,135 +746,137 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildProPackSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A), // Azul muy oscuro de la web
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.cyan.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.cyan.withOpacity(0.05),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // El libro 3D decorativo a un lado (pequeño en móvil)
-            Positioned(
-              right: -20,
-              top: 20,
-              child: Opacity(
-                opacity: 0.15,
-                child: Image.asset(
-                  'assets/images/libro-antigravity-con-postura-diferenteremovebg-preview.png',
-                  height: 160,
+      child: InkWell(
+        onTap: _showProModal,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.cyan.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.cyan.withOpacity(0.05),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -20,
+                top: 20,
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Image.asset(
+                    'assets/images/libro-antigravity-con-postura-diferenteremovebg-preview.png',
+                    height: 160,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'EbookPack Pro',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'EbookPack Pro',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'ACCESO DE POR VIDA',
-                    style: TextStyle(
-                      color: AppColors.cyan,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'ACCESO DE POR VIDA',
+                      style: TextStyle(
+                        color: AppColors.cyan,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildProFeature('Plataforma Interactiva (8 Niveles)'),
-                  _buildProFeature('Ebook "Arquitectura de Agentes" (PDF)'),
-                  _buildProFeature('Workshop: 2 Horas de Video'),
-                  _buildProFeature('Repo Base: Todos los Agentes IA'),
-                  const SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Regular: \$49',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 12,
-                              decoration: TextDecoration.lineThrough,
+                    const SizedBox(height: 20),
+                    _buildProFeature('Plataforma Interactiva completada'),
+                    _buildProFeature('Ebook "Arquitectura de Agentes" (PDF)'),
+                    _buildProFeature('Workshop: 2 Horas de Video'),
+                    _buildProFeature('Repo Base: Todos los Agentes IA'),
+                    const SizedBox(height: 24),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Regular: \$49',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            Text(
+                              '\$9.99',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'USD',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.5),
                             ),
                           ),
-                          Text(
-                            '\$9.99',
+                          child: const Text(
+                            'AHORRO 80%',
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
+                              color: Colors.green,
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'USD',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    _buildProButton(),
+                    const SizedBox(height: 12),
+                    const Center(
+                      child: Text(
+                        'Pago único. Sin suscripciones. Garantía 14 días.',
                         style: TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 14,
+                          fontSize: 10,
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.green.withOpacity(0.5),
-                          ),
-                        ),
-                        child: const Text(
-                          'AHORRO 80%',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  _buildProButton(),
-                  const SizedBox(height: 12),
-                  const Center(
-                    child: Text(
-                      'Pago único. Sin suscripciones. Garantía 14 días.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 10,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -804,13 +887,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          const Icon(Icons.check, color: AppColors.cyan, size: 16),
+          const Icon(Icons.check_circle, color: AppColors.success, size: 16),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
         ],
@@ -819,77 +901,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildProButton() {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return Container(
-          width: double.infinity,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.cyan, Color(0xFFA855F7)],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.cyan.withOpacity(0.3 * _pulseController.value),
-                blurRadius: 15,
-                spreadRadius: 2,
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cyan.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: ElevatedButton(
-            onPressed: () async {
-              final Uri url = Uri.parse('https://ko-fi.com/s/a2f7374844');
-              if (!await launchUrl(url)) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No se pudo abrir el enlace')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              'Obtener Acceso Total',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _showProModal,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.cyan,
+          foregroundColor: Colors.black,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          decoration: BoxDecoration(
-            color: AppColors.cyan,
-            borderRadius: BorderRadius.circular(2),
-          ),
+          elevation: 0,
         ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: AppTextStyles.heading2.copyWith(
-            fontSize: 16,
-            letterSpacing: 1,
-          ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_cart_outlined, size: 20),
+            SizedBox(width: 10),
+            Text(
+              'OBTENER PACK PRO',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
